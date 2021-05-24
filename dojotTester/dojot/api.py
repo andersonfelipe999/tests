@@ -30,17 +30,20 @@ class DojotAPI():
         """
         LOGGER.debug("Retrieving JWT...")
 
+        # __Note__ You need to enable the `dev-test-cli` client in the keycloak. For security reasons it is disabled by default, after use it is recommended to disable it again.
         args = {
             "url": "{0}/auth/realms/{1}/protocol/openid-connect/token".format(CONFIG['dojot']['url'], CONFIG['app']['tenant']),
             "data": {
                 "username": CONFIG['dojot']['user'],
                 "password": CONFIG['dojot']['passwd'],
-                "client_id": "cli",
+                "client_id": "dev-test-cli",
                 "grant_type": "password",
             }
         }
 
         _, res = DojotAPI.call_api(requests.post, args)
+
+        print(res)
 
         LOGGER.debug(".. retrieved JWT")
         return res["access_token"]
