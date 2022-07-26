@@ -1573,6 +1573,43 @@ class DojotAPI:
         LOGGER.debug("...done ")
         return result_code, res
 
+
+    @staticmethod
+    def upload_file_with_md5(jwt: str, filePath: str, path: str,md5: str) -> tuple:
+        """
+        Returns the uploaded file or a error message.
+        """
+        LOGGER.debug("Uploading file...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/upload".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Authorization": "Bearer {0}".format(jwt)
+            },
+            "files": {'file': open(filePath, 'rb')},
+            "data": {
+                "path": path,
+                "md5":"{0}".format(md5)
+            }
+            
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.put, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+
     @staticmethod
     def upload_file(jwt: str, filePath: str, path: str) -> tuple:
         """
@@ -1591,6 +1628,71 @@ class DojotAPI:
         args = {
             "url": url,
             "headers": {
+                "Authorization": "Bearer {0}".format(jwt)
+            },
+            "files": {'file': open(filePath, 'rb')},
+            "data": {
+                "path": path
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.put, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+
+    @staticmethod
+    def upload_file_without_body(jwt: str, filePath: str, path: str) -> tuple:
+        """
+        Returns the uploaded file or a error message.
+        """
+        LOGGER.debug("Uploading file...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/upload".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.put, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+
+    @staticmethod
+    def upload_file_with_contentType(jwt: str, filePath: str, path: str) -> tuple:
+        """
+        Returns the uploaded file or a error message.
+        """
+        LOGGER.debug("Uploading file...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/upload".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+            	"Content-Type": "application/json",
                 "Authorization": "Bearer {0}".format(jwt)
             },
             "files": {'file': open(filePath, 'rb')},
@@ -1670,7 +1772,7 @@ class DojotAPI:
         return result_code, res
     
     @staticmethod
-    def list_stored_files_without_token(jwt: str, parameter: str) -> tuple:
+    def download_stored_files_without_token(jwt: str, parameter: str) -> tuple:
         """
         Returns the uploaded file or a error message.
         """
@@ -1688,6 +1790,37 @@ class DojotAPI:
             "url": url,
             "headers": {
                 "Content-Type": "application/json"
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+    
+    @staticmethod
+    def download_files_with_path(jwt: str, parameter: str) -> tuple:
+        """
+        Returns the uploaded file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/{1}".format(CONFIG['dojot']['url'], parameter)
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
             }
         }
 
@@ -1762,7 +1895,7 @@ class DojotAPI:
         return result_code, res
 
     @staticmethod
-    def get_file_parameter_list(jwt: str, path: str) -> tuple:
+    def list_file_parameter(jwt: str, path: str) -> tuple:
         
         LOGGER.debug("Removing file...")
 
