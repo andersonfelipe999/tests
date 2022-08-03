@@ -2901,7 +2901,7 @@ class SanityTest(BaseTest):
         #self.logger.info("device_id: " + str(dev_id) + ", mensagem: " + str(res))
         #self.assertTrue(res["value"] == "baixa umidade relativa do ar: 15 !", "** FAILED ASSERTION: received an unexpected message: " + str(res["value"]) + " **")
 
-        rc, count = get_history_count_attr_value(self, jwt, device_id, "mensagem", "baixa umidade relativa do ar: 15 !")
+        rc, count = get_history_count_attr_value(self, jwt, dev_id, "mensagem", "baixa umidade relativa do ar: 15 !")
         self.logger.info("total de registros: " + str(count))
         self.assertTrue(count == 2, "** FAILED ASSERTION: Unexpected count value")
 
@@ -3186,8 +3186,7 @@ class SanityTest(BaseTest):
 
         dev1 = HTTPSClient(device_id)
 
-        payload = {"temperature": 90, 'humidity': 60}
-        publish_date = datetime.datetime.utcnow().isoformat() + "Z"
+        payload = {"temperature": 90}
         rc, res = dev1.publish(payload)
         self.assertTrue(rc == 204,
                         "** FAILED ASSERTION: Unexpected result code value: " + str(rc) + ". Body: " + str(res))
