@@ -1417,7 +1417,7 @@ class DojotAPI:
         LOGGER.debug("... retrieved users")
 
         return rc, res
-
+    
     @staticmethod
     def get_profiles(jwt: str) -> tuple:
         """
@@ -1535,8 +1535,7 @@ class DojotAPI:
             "data": data,
         }
 
-        #result_code, res = DojotAPI.call_api(requests.post, args)
-        result_code, res = DojotAPI.call_api(requests.get, args)
+        result_code, res = DojotAPI.call_api(requests.post, args)
 
         LOGGER.debug("... retrieved the credentials")
 
@@ -1770,7 +1769,1233 @@ class DojotAPI:
 
         LOGGER.debug("...done ")
         return result_code, res
+    @staticmethod
+    def get_tenants(jwt: str) -> tuple:
+        """
+        Retrieves tenants.
+        Parameters:
+            jwt: Dojot JWT token
+        """
+        LOGGER.debug("Retrieving tenants...")
+
+        url = "{0}/auth/admin/tenants".format(CONFIG['dojot']['url'])
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt),
+                }
+            }
+
+        rc, res = DojotAPI.call_api(requests.get, args)
+
+        LOGGER.debug("... retrieved users")
+
+        return rc, res
+
+    @staticmethod
+    def list_files_limit_empty(jwt: str) -> tuple:
+        """
+        Returns the list file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/list?limit".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+
+    @staticmethod
+    def list_files_text_with_value(jwt: str) -> tuple:
+        """
+        Returns the list file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/list?limit=10&pathPrefix=/docs/arquivo1.txt".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+
+    @staticmethod
+    def list_files_video_by_prefix(jwt: str) -> tuple:
+        """
+        Returns the list file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/list?limit=10&pathPrefix=/videos".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+
+    @staticmethod
+    def remove_file_name_invalid(jwt: str) -> tuple:
+        
+        LOGGER.debug("Removing file...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/remove?pathDelete=arquivos/arquivo.txt".format(CONFIG['dojot']['url'])
+
+        # setting args
+
+        args = {
+            "url": url,
+            "headers": {
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.delete, args)
+
+        LOGGER.debug("...done ")
+        return result_code, res
     
+    @staticmethod
+    def list_file_som(jwt: str) -> tuple:
+        """
+        Returns the list file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/list?limit=10&pathPrefix=/sounds".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+    @staticmethod
+    def list_file_path_prefix(jwt: str) -> tuple:
+        """
+        Returns the list file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/list?limit=5&pathPrefix=/docs".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+    
+    @staticmethod
+    def list_file_start_after(jwt: str) -> tuple:
+        """
+        Returns the list file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/list?limit=1&startAfter=/docs/arquivo1.txt".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+
+    @staticmethod
+    def list_files_all_filter(jwt: str) -> tuple:
+        """
+        Returns the list file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/list?limit=1&pathPrefix=/docs&startAfter=/docs/arquivo2.txt".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+    
+    @staticmethod
+    def list_last_file(jwt: str) -> tuple:
+        """
+        Returns the list file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/list?limit=2&startAfter=docs/testes.txt".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+
+    @staticmethod
+    def list_files_limit_zero(jwt: str) -> tuple:
+        """
+        Returns the list file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/list?limit=0".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+
+    @staticmethod
+    def list_files_limit_not_integer(jwt: str) -> tuple:
+        """
+        Returns the list file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/list?limit=X".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+    
+    @staticmethod
+    def list_files_limit_three(jwt: str) -> tuple:
+        """
+        Returns the list file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/list?limit=3".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+
+    @staticmethod
+    def list_files_limit_double_value(jwt: str) -> tuple:
+        """
+        Returns the list file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/list?limit=3.1".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+
+    @staticmethod
+    def list_file_there_is_not_data(jwt: str) -> tuple:
+        """
+        Returns the list file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/list?limit=3&pathPrefix=/automacao".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+
+    @staticmethod
+    def list_file_invalid_name(jwt: str) -> tuple:
+        """
+        Returns the list file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/list?limit=1&startAfter=teste$#@!%&*".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+
+    @staticmethod
+    def list_start_file_does_not_exist(jwt: str) -> tuple:
+        """
+        Returns the list file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/list?limit=2&startAfter=test%2Fsample_4.txt".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+        
+    @staticmethod
+    def list_files_limit_less_than_zero(jwt: str) -> tuple:
+        """
+        Returns the list file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/list?limit=-3".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+    
+    @staticmethod
+    def list_files_limit_five(jwt: str) -> tuple:
+        """
+        Returns the list file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/list?limit=5".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+
+    @staticmethod
+    def list_files_start_after_invalid(jwt: str) -> tuple:
+        """
+        Returns the list file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/list?limit=3&startAfter=invalido".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+
+    @staticmethod
+    def list_files_with_path_prefix_invalid(jwt: str) -> tuple:
+        """
+        Returns the list file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/list?limit=3&pathPrefix=/invalido".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+
+    @staticmethod
+    def download_files_alt(jwt: str) -> tuple:
+        """
+        Returns the uploaded file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/download?alt=teste".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+    @staticmethod
+    def download_files_alt_media_path(jwt: str) -> tuple:
+        """
+        Returns the uploaded file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/download?alt=midia&path=docs/arquivo.txt".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+    
+    @staticmethod
+    def download_file_path_none_existent(jwt: str) -> tuple:
+        """
+        Returns the uploaded file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/download?alt=url&path=xxx/arquivo.txt".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+    
+    @staticmethod
+    def download_file_url_external(jwt: str) -> tuple:
+        """
+        Returns the uploaded file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/download?alt=url&path=docs/arquivo3.txt".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+    
+    @staticmethod
+    def download_file_incomplete_command(jwt: str) -> tuple:
+        """
+        Returns the uploaded file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/download?alt=url".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+    
+    @staticmethod
+    def download_file_none_existent(jwt: str) -> tuple:
+        """
+        Returns the uploaded file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/download?alt=url&path=/docs/teste.txt".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+
+
+    @staticmethod
+    def download_file_parameter_invalid(jwt: str) -> tuple:
+        """
+        Returns the uploaded file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/download?attr=media&path=docs/arquivo.txt".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+
+    @staticmethod
+    def download_file_without_parameter_alt(jwt: str) -> tuple:
+        """
+        Returns the uploaded file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/download?path=docs/arquivo.txt".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+    
+    @staticmethod
+    def download_files_value_invalid(jwt: str) -> tuple:
+        """
+        Returns the uploaded file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = '{0}/file-mgmt/api/v1/files/download?alt=media&path=abcdefghi1abcdefghi2abcdefghi3abcdefghi4abcdefghi5abcdefghi6abcdefghi7abcdefghi8abcdefghi9abcdefghi1"'.format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+    
+    @staticmethod
+    def download_files_without_parameter_path(jwt: str) -> tuple:
+        """
+        Returns the uploaded file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/download?alt=media".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+    
+    @staticmethod
+    def download_files_path_not_existent(jwt: str) -> tuple:
+        """
+        Returns the uploaded file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/download?alt=media&path=tes".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+
+    @staticmethod
+    def download_files_path_incomplete(jwt: str) -> tuple:
+        """
+        Returns the uploaded file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/download?alt=media&path=arquivo.txt".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+    
+
+    @staticmethod
+    def download_files_path_greater_than_one_hundred(jwt: str) -> tuple:
+        """
+        Returns the uploaded file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/download?alt=media&path=abcdefghi1abcdefghi2abcdefghi3abcdefghi4abcdefghi5abcdefghi6abcdefghi7abcdefghi8abcdefghi9abcdefghi100".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+
+    @staticmethod
+    def download_files_path_less_than_three(jwt: str) -> tuple:
+        """
+        Returns the uploaded file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/download?alt=media&path=ab".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+    
+    @staticmethod
+    def download_file_name_parameter_invalid(jwt: str) -> tuple:
+        """
+        Returns the uploaded file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/download?alt=url&caminho=/images/lucerne.jpg".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+    
+    @staticmethod
+    def download_file_word_reserved(jwt: str) -> tuple:
+        """
+        Returns the uploaded file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/download?alt=media&path=/.tmp/".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+
+    @staticmethod
+    def download_file_parameter_alt_invalid(jwt: str) -> tuple:
+        """
+        Returns the uploaded file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/download?alt=xxx&path=/images/lucerne.jpg".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+
+    @staticmethod
+    def download_file_without_token(jwt: str) -> tuple:
+        """
+        Returns the uploaded file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/download?alt=url&path=/images/lucerne.jpg".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+
+    @staticmethod
+    def download_files_path_invalid(jwt: str) -> tuple:
+        """
+        Returns the uploaded file or a error message.
+        """
+        LOGGER.debug("Listing stored files...")
+
+        # setting url
+
+        url = "{0}/file-mgmt/api/v1/files/download?alt=media&path=/xxx/arquivo.txt".format(CONFIG['dojot']['url'])
+
+
+        # setting args
+
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt)
+            }
+        }
+
+
+        LOGGER.debug("sending request...")
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+
+        LOGGER.debug("...done ")
+        return result_code, res
+
     @staticmethod
     def download_stored_files_without_token(jwt: str, parameter: str) -> tuple:
         """
@@ -1802,7 +3027,7 @@ class DojotAPI:
         return result_code, res
     
     @staticmethod
-    def download_files_with_path(jwt: str, parameter: str) -> tuple:
+    def download_files_alt_media(jwt: str) -> tuple:
         """
         Returns the uploaded file or a error message.
         """
@@ -1810,7 +3035,7 @@ class DojotAPI:
 
         # setting url
 
-        url = "{0}/file-mgmt/api/v1/files/{1}".format(CONFIG['dojot']['url'], parameter)
+        url = "{0}/file-mgmt/api/v1/files/download?alt=media".format(CONFIG['dojot']['url'])
 
 
         # setting args
@@ -1819,8 +3044,7 @@ class DojotAPI:
         args = {
             "url": url,
             "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {0}".format(jwt)
+                "Content-Type": "application/json"
             }
         }
 
@@ -1831,6 +3055,7 @@ class DojotAPI:
 
         LOGGER.debug("...done ")
         return result_code, res
+
 
     @staticmethod
     def list_stored_files(jwt: str, limit: int) -> tuple:
@@ -1842,37 +3067,6 @@ class DojotAPI:
         # setting url
 
         url = "{0}/file-mgmt/api/v1/files/list?limit={1}".format(CONFIG['dojot']['url'], limit)
-
-
-        # setting args
-
-
-        args = {
-            "url": url,
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {0}".format(jwt)
-            }
-        }
-
-
-        LOGGER.debug("sending request...")
-        result_code, res = DojotAPI.call_api(requests.get, args)
-
-
-        LOGGER.debug("...done ")
-        return result_code, res
-
-    @staticmethod
-    def get_files(jwt: str, parameter: str) -> tuple:
-        """
-        Returns the uploaded file or a error message.
-        """
-        LOGGER.debug("Listing stored files...")
-
-        # setting url
-
-        url = "{0}/file-mgmt/api/v1/files/list?download?{1}".format(CONFIG['dojot']['url'], format(parameter))
 
 
         # setting args
@@ -1920,13 +3114,13 @@ class DojotAPI:
         return result_code, res
 
     @staticmethod
-    def remove_stored_file_parameter(jwt: str, path: str) -> tuple:
+    def remove_file(jwt: str) -> tuple:
         
         LOGGER.debug("Removing file...")
 
         # setting url
 
-        url = "{0}/file-mgmt/api/v1/files/{1}".format(CONFIG['dojot']['url'], path)
+        url = "{0}/file-mgmt/api/v1/files/remove".format(CONFIG['dojot']['url'])
 
         # setting args
 

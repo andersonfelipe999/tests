@@ -126,7 +126,7 @@ class UploadUnsupportedMediaType(BaseTest):
         #Calling method for upload of file
         rc, res = Api.upload_file_with_contentType(self.jwt, self.file, self.path)
         self.logger.info('Result: ' + str(res) + ', ' + str(rc))
-        self.assertTrue(int(rc) == 400, "Error in Status Code")
+        self.assertTrue(int(rc) == 415, "Error in Status Code")
 
   
 
@@ -733,7 +733,7 @@ class RemoveFilePathNameInvalid(BaseTest):
         self.logger.info('path: ' + str(self.path))
 
         #Calling method for remove of file    
-        rc, res = Api.remove_stored_file_parameter(self.jwt, 'remove?pathDelete=arquivos/arquivo.txt')
+        rc, res = Api.remove_file_name_invalid(self.jwt)
         self.logger.info('Result: ' + str(res) + ', ' + str(rc))
         self.assertTrue(int(rc) == 400, "Error in Status Code")
 
@@ -769,7 +769,7 @@ class RemoveFileIncompleteCommand(BaseTest):
         self.logger.info('path: ' + str(self.path))
 
         #Calling method for remove of file  
-        rc, res = Api.remove_stored_file_parameter(self.jwt, 'remove')
+        rc, res = Api.remove_file(self.jwt)
         self.logger.info('Result: ' + str(res) + ', ' + str(rc))
         self.assertTrue(int(rc) == 400, "Error in Status Code")
 
@@ -933,7 +933,7 @@ class ListFileLimitTen(BaseTest):
         self.assertTrue(self.jwt is not None, "** FAILED ASSERTION: failure to get JWT **")
 
         #Calling method for upload of file
-        Utility.UploadSeveralFiles(self)
+        UploadSeveralFiles(self)
         self.logger.info('Setup executed!')
 
     def runTest(self):
@@ -946,7 +946,7 @@ class ListFileLimitTen(BaseTest):
 
     def tearDown(self):
         #Calling method for remove several file
-        Utility.RemoveSeveralFiles(self)
+        RemoveSeveralFiles(self)
 
 class ListFileLimitThree(BaseTest): 
 
@@ -958,7 +958,7 @@ class ListFileLimitThree(BaseTest):
         self.assertTrue(self.jwt is not None, "** FAILED ASSERTION: failure to get JWT **")
 
         #Calling method for upload of file
-        Utility.UploadSeveralFiles(self)
+        UploadSeveralFiles(self)
         self.logger.info('Setup executed!')
 
     def runTest(self):
@@ -971,7 +971,7 @@ class ListFileLimitThree(BaseTest):
 
     def tearDown(self):
         #Calling method for remove several file
-        Utility.RemoveSeveralFiles(self)
+        RemoveSeveralFiles(self)
 
 class DownloadFileParameterValueInvalid(BaseTest): 
 
@@ -983,21 +983,21 @@ class DownloadFileParameterValueInvalid(BaseTest):
         self.assertTrue(self.jwt is not None, "** FAILED ASSERTION: failure to get JWT **")
 
         #Calling method for upload of file
-        Utility.UploadSeveralFiles(self)
+        UploadSeveralFiles(self)
         self.logger.info('Setup executed!')
 
     def runTest(self):
         self.logger.info('Executing test...permission read-only')
 
         #Calling method for list of file
-        rc, res = Api.download_files_with_path(self.jwt, 'download?alt=teste')
+        rc, res = Api.download_files_alt(self.jwt)
         self.logger.info('Result: ' + str(res))
         self.assertTrue(int(rc) == 400, "Error in Status Code")
 
 
     def tearDown(self):
         #Calling method for remove several file
-        Utility.RemoveSeveralFiles(self)
+        RemoveSeveralFiles(self)
 
 
 class DownloadFileWithoutJwtInvalid(BaseTest): 
@@ -1013,10 +1013,9 @@ class DownloadFileWithoutJwtInvalid(BaseTest):
 
     def runTest(self):
         self.logger.info('Executing test...')
-
-        self.jwt='eyJ0eXAiOiJKV1QiLCJhbGciOiJIUzI1NiJ9.eyJpc3MiOiJtTE8ySVMzUlNzclYzeno4Wm9LeFB1b01ENGJjaVZJaSIsImlhdCI6MTY1NTMxNDEzMSwiZXhwIjoxNjU1MzE0NTUxLCJwcm9maWxlIjoiYWRtaW4iLCJncm91cHMiOlsxXSwidXNlcmlkIjoxLCJqdGkiOiIyODFmMjYzZDMyN2JhMDkxMjhlNDA5MDI2YzkzMGIxNyIsInNlcnZpY2UiOiJhZG1pbiIsInVzZXJuYW1lIjoiYWRtaW4ifQ.FhOwpMJfa2jEYAoit9guroV8TiqN5SqeKkdsWnyRKFc'
+        self.jwt= self.jwt + 'eyJ0eXAiOiJKV1Q'
         #Calling method for list of file
-        rc, res = Api.download_files_with_path(self.jwt, 'download?alt=midia&path=docs/arquivo.txt')
+        rc, res = Api.download_files_alt_media_path(self.jwt)
         self.logger.info('Result: ' + str(res))
         self.assertTrue(int(rc) == 401, "Error in Status Code")
 
@@ -1035,7 +1034,7 @@ class DownloadFilePathNonexistent(BaseTest):
         self.logger.info('Executing test...')
 
         #Calling method for list of file 
-        rc, res = Api.download_files_with_path(self.jwt, 'download?alt=url&path=xxx/arquivo.txt')
+        rc, res = Api.download_file_path_none_existent(self.jwt)
         self.logger.info('Result: ' + str(res))
 
         self.assertTrue(int(rc) == 404, "Error in Status Code")
@@ -1220,7 +1219,7 @@ class DownloadUrlExternalFile(BaseTest):
         self.assertTrue(self.jwt is not None, "** FAILED ASSERTION: failure to get JWT **")
 
         #Calling method for upload of file
-        Utility.UploadSeveralFiles(self)
+        UploadSeveralFiles(self)
         self.logger.info('Setup executed!')
 
     def runTest(self):
@@ -1229,13 +1228,13 @@ class DownloadUrlExternalFile(BaseTest):
         self.logger.info('Executing test...')
 
         #Calling method for list of file
-        rc, res = Api.download_files_with_path(self.jwt, 'download?alt=url&path=docs/arquivo3.txt')
+        rc, res = Api.download_file_url_external(self.jwt)
         self.assertTrue(int(rc) == 200, "Error in Status Code")
         self.logger.info('Result: ' + str(res))
 
     def tearDown(self):
         #Calling method for remove several file
-        Utility.RemoveSeveralFiles(self)
+        RemoveSeveralFiles(self)
 
 
 class ListFileLimitAll(BaseTest): 
@@ -1318,7 +1317,7 @@ class ListFileLimitTwenty(BaseTest):
         self.assertTrue(self.jwt is not None, "** FAILED ASSERTION: failure to get JWT **")
 
         #Calling method for upload of file
-        Utility.UploadSeveralFiles(self)
+        UploadSeveralFiles(self)
         self.logger.info('Setup executed!')
 
     def runTest(self):
@@ -1331,7 +1330,7 @@ class ListFileLimitTwenty(BaseTest):
 
     def tearDown(self):
         #Calling method for remove several file
-        Utility.RemoveSeveralFiles(self)
+        RemoveSeveralFiles(self)
 
 class ListFilesPaginateGreatThanLimit(BaseTest): 
 
@@ -1343,7 +1342,7 @@ class ListFilesPaginateGreatThanLimit(BaseTest):
         self.assertTrue(self.jwt is not None, "** FAILED ASSERTION: failure to get JWT **")
 
         #Calling method for upload of file
-        Utility.UploadSeveralFiles(self)
+        UploadSeveralFiles(self)
         self.logger.info('Setup executed!')
 
     def runTest(self):
@@ -1356,7 +1355,7 @@ class ListFilesPaginateGreatThanLimit(BaseTest):
 
     def tearDown(self):
         #Calling method for remove several file
-        Utility.RemoveSeveralFiles(self)
+        RemoveSeveralFiles(self)
 
 
 class ListFileTextWithValue(BaseTest): 
@@ -1369,21 +1368,21 @@ class ListFileTextWithValue(BaseTest):
         self.assertTrue(self.jwt is not None, "** FAILED ASSERTION: failure to get JWT **")
 
         #Calling method for upload of file
-        Utility.UploadSeveralFiles(self)
+        UploadSeveralFiles(self)
         self.logger.info('Setup executed!')
 
     def runTest(self):
         self.logger.info('Executing test...')
 
         #Calling method for list of file 
-        rc, res = Api.list_files_with_path(self.jwt, "list?limit=10&pathPrefix=/docs/arquivo1.txt")
+        rc, res = Api.list_files_text_with_value(self.jwt)
         self.logger.info('Result: ' + str(res))
         self.assertTrue(int(rc) == 200, "Error in Status Code")
 
 
     def tearDown(self):
         #Calling method for remove several file
-        Utility.RemoveSeveralFiles(self)
+        RemoveSeveralFiles(self)
         
 
 class ListFileVideoByPrefix(BaseTest): 
@@ -1396,21 +1395,21 @@ class ListFileVideoByPrefix(BaseTest):
         self.assertTrue(self.jwt is not None, "** FAILED ASSERTION: failure to get JWT **")
 
         #Calling method for upload of file
-        Utility.UploadSeveralFiles(self)
+        UploadSeveralFiles(self)
         self.logger.info('Setup executed!')
 
     def runTest(self):
         self.logger.info('Executing test...permission read-only')
 
         #Calling method for list of file 
-        rc, res = Api.list_files_with_path(self.jwt, "list?limit=10&pathPrefix=/videos")
+        rc, res = Api.list_files_video_by_prefix(self.jwt)
         self.logger.info('Result: ' + str(res))
         self.assertTrue(int(rc) == 200, "Error in Status Code")
 
 
     def tearDown(self):
         #Calling method for remove several file
-        Utility.RemoveSeveralFiles(self)
+        RemoveSeveralFiles(self)
 
 
 class DownloadImagem(BaseTest):
@@ -1538,7 +1537,7 @@ class ListFileSom(BaseTest):
         self.assertTrue(int(rc) == 200, "Error in Status Code")
 
         #Calling method for list file
-        rc, res = Api.list_files_with_path(self.jwt, 'list?limit=10&pathPrefix=/sounds')
+        rc, res = Api.list_file_som(self.jwt)
         self.logger.info('Result: ' + str(res))
         self.assertTrue(int(rc) == 200, "Error in Status Code") 
 
@@ -1567,14 +1566,14 @@ class ListFileFilterLimit(BaseTest):
         self.assertTrue(self.jwt is not None, "** FAILED ASSERTION: failure to get JWT **")
 
         #Calling method for upload of file
-        Utility.UploadSeveralFiles(self)
+        UploadSeveralFiles(self)
         self.logger.info('Setup executed!')
 
     def runTest(self):
         self.logger.info('Executing test...')
 
         #Calling method for list of file 
-        rc, res = Api.list_files_with_path(self.jwt, 'list?limit=5&pathPrefix=/docs')
+        rc, res = Api.list_file_path_prefix(self.jwt)
         self.logger.info('Result: ' + str(res))
 
         #Validation of responses   
@@ -1582,7 +1581,7 @@ class ListFileFilterLimit(BaseTest):
 
     def tearDown(self):
         #Calling method for remove several file
-        Utility.RemoveSeveralFiles(self)
+        RemoveSeveralFiles(self)
 
 
 class ListFileStartAfter(BaseTest): 
@@ -1595,7 +1594,7 @@ class ListFileStartAfter(BaseTest):
         self.assertTrue(self.jwt is not None, "** FAILED ASSERTION: failure to get JWT **")
 
         #Calling method for upload of file
-        Utility.UploadSeveralFiles(self)
+        UploadSeveralFiles(self)
         self.logger.info('Setup executed!')
 
 
@@ -1603,7 +1602,7 @@ class ListFileStartAfter(BaseTest):
         self.logger.info('Executing test...')
         
         #Calling method for list of file 
-        rc, res = Api.list_files_with_path(self.jwt, 'list?limit=1&startAfter=/docs/arquivo1.txt')
+        rc, res = Api.list_file_start_after(self.jwt)
         self.logger.info('Result: ' + str(res))
 
         #Validation of responses   
@@ -1612,7 +1611,7 @@ class ListFileStartAfter(BaseTest):
 
     def tearDown(self):
         #Calling method for remove several file
-        Utility.RemoveSeveralFiles(self)
+        RemoveSeveralFiles(self)
 
 class ListFileAllFilters(BaseTest): 
 
@@ -1624,20 +1623,20 @@ class ListFileAllFilters(BaseTest):
         self.assertTrue(self.jwt is not None, "** FAILED ASSERTION: failure to get JWT **")
 
         #Calling method for upload of file
-        Utility.UploadSeveralFiles(self)
+        UploadSeveralFiles(self)
         self.logger.info('Setup executed!')
 
     def runTest(self):
         self.logger.info('Executing test...')
 
         #Calling method for list of file 
-        rc, res = Api.list_files_with_path(self.jwt, 'list?limit=1&pathPrefix=/docs&startAfter=/docs/arquivo2.txt')
+        rc, res = Api.list_files_all_filter(self.jwt)
         self.logger.info('Result: ' + str(res))
         self.assertTrue(int(rc) == 200, "Error in Status Code")
 
     def tearDown(self):
         #Calling method for remove several file
-        Utility.RemoveSeveralFiles(self)
+        RemoveSeveralFiles(self)
 
 
 
@@ -1651,20 +1650,20 @@ class ListLastFile(BaseTest):
         self.assertTrue(self.jwt is not None, "** FAILED ASSERTION: failure to get JWT **")
 
         #Calling method for upload of file
-        Utility.UploadSeveralFiles(self)
+        UploadSeveralFiles(self)
         self.logger.info('Setup executed!')
 
     def runTest(self):
         self.logger.info('Executing test...')
 
         #Calling method for list of file 
-        rc, res = Api.list_files_with_path(self.jwt, 'list?limit=2&startAfter=docs/testes.txt')
+        rc, res = Api.list_last_file(self.jwt)
         self.logger.info('Result: ' + str(res))
         self.assertTrue(int(rc) == 200, "Error in Status Code")
 
     def tearDown(self):
         #Calling method for remove several file
-        Utility.RemoveSeveralFiles(self)
+        RemoveSeveralFiles(self)
 
 class ListNoFileInBucket(BaseTest): 
 
@@ -1676,20 +1675,20 @@ class ListNoFileInBucket(BaseTest):
         self.assertTrue(self.jwt is not None, "** FAILED ASSERTION: failure to get JWT **")
 
         #Calling method for upload of file
-        Utility.UploadSeveralFiles(self)
+        UploadSeveralFiles(self)
         self.logger.info('Setup executed!')
 
     def runTest(self):
         self.logger.info('Executing test...')
 
-        #Calling method for list of file 
-        rc, res = Api.list_files_with_path(self.jwt, 'list?limit=5')
+        #Calling method for list of file
+        rc, res = Api.list_files_limit_five(self.jwt)
         self.logger.info('Result: ' + str(res))
         self.assertTrue(int(rc) == 200, "Error in Status Code")
 
     def tearDown(self):
         #Calling method for remove several file
-        Utility.RemoveSeveralFiles(self)
+        RemoveSeveralFiles(self)
 
 class DownloadFileParameterInvalid(BaseTest): 
 
@@ -1706,7 +1705,7 @@ class DownloadFileParameterInvalid(BaseTest):
         self.logger.info('Executing test...')
 
         #Calling method for list of file 
-        rc, res = Api.download_files_with_path(self.jwt, 'download?attr=media&path=docs/arquivo.txt')
+        rc, res = Api.download_file_parameter_invalid(self.jwt)
         self.logger.info('Result: ' + str(res))
 
         #Validation of responses   
@@ -1734,7 +1733,7 @@ class DownloadFileWithoutParameterAlt(BaseTest):
         self.logger.info('Executing test...')
 
         #Calling method for list of file 
-        rc, res = Api.download_files_with_path(self.jwt, 'download?path=docs/arquivo.txt')
+        rc, res = Api.download_file_without_parameter_alt(self.jwt)
         self.logger.info('Result: ' + str(res))
 
 
@@ -1761,7 +1760,7 @@ class DownloadFileWithoutParameterPath(BaseTest):
         self.logger.info('Executing test...')
 
         #Calling method for list of file 
-        rc, res = Api.download_files_with_path(self.jwt, 'download?alt=media')
+        rc, res = Api.download_files_without_parameter_path(self.jwt)
         self.logger.info('Result: ' + str(res))
 
         #Validation of responses   
@@ -1783,7 +1782,7 @@ class DownloadFileWithoutToken(BaseTest):
         self.logger.info('Executing test...')
 
         #Calling method for list of file 
-        rc, res = Api.download_stored_files_without_token(self.jwt, 'download?alt=media')
+        rc, res = Api.download_files_alt_media(self.jwt)
         self.logger.info('Result: ' + str(res))
 
         #Validation of responses   
@@ -1806,7 +1805,7 @@ class DownloadPathNotExist(BaseTest):
         self.logger.info('Executing test...')
 
         #Calling method for list of file 
-        rc, res = Api.download_files_with_path(self.jwt, 'download?alt=media&path="tes')
+        rc, res = Api.download_files_path_not_existent(self.jwt)
         self.logger.info('Result: ' + str(res))
 
         #Validation of responses   
@@ -1826,7 +1825,7 @@ class DownloadFilePathInvalid(BaseTest):
         self.logger.info('Executing test...')
 
         #Calling method for list of file 
-        rc, res = Api.download_files_with_path(self.jwt, 'download?alt=media&path="/xxx/arquivo.txt')
+        rc, res = Api.download_files_path_invalid(self.jwt)
         self.logger.info('Result: ' + str(res))
 
         #Validation of responses   
@@ -1849,7 +1848,7 @@ class DownloadFilePathIncomplete(BaseTest):
         self.logger.info('Executing test...')
 
         #Calling method for list of file 
-        rc, res = Api.download_files_with_path(self.jwt, 'download?alt=media&path="arquivo.txt')
+        rc, res = Api.download_files_path_incomplete(self.jwt)
         self.logger.info('Result: ' + str(res))
 
         #Validation of responses   
@@ -1872,7 +1871,7 @@ class DownloadFIlePathLessThanThree(BaseTest):
         self.logger.info('Executing test...')
 
         #Calling method for list of file 
-        rc, res = Api.download_files_with_path(self.jwt, 'download?alt=media&path="ab')
+        rc, res = Api.download_files_path_less_than_three(self.jwt)
         self.logger.info('Result: ' + str(res))
         self.assertTrue(int(rc) == 404, "Error in Status Code")
 
@@ -1893,7 +1892,7 @@ class DownloadFIlePathGreaterThanOneHundred(BaseTest):
         self.logger.info('Executing test...')
 
         #Calling method for list of file 
-        rc, res = Api.download_files_with_path(self.jwt, 'download?alt=media&path=abcdefghi1abcdefghi2abcdefghi3abcdefghi4abcdefghi5abcdefghi6abcdefghi7abcdefghi8abcdefghi9abcdefghi100"')
+        rc, res = Api.download_files_path_greater_than_one_hundred(self.jwt)
         self.logger.info('Result: ' + str(res))
 
         #Validation of responses   
@@ -1915,7 +1914,7 @@ class DownloadFileNotExist(BaseTest):
         self.logger.info('Executing test...')
 
         #Calling method for list of file 
-        rc, res = Api.download_files_with_path(self.jwt, 'download?alt=media"')
+        rc, res = Api.download_files_without_parameter_path(self.jwt)
         self.logger.info('Result: ' + str(res))
         self.assertTrue(int(rc) == 400, "Error in Status Code")
 
@@ -1934,7 +1933,7 @@ class GetFileValueInvalid(BaseTest):
         self.logger.info('Executing test...')
 
         #Calling method for list of file 
-        rc, res = Api.download_files_with_path(self.jwt, 'download?alt=media&path=abcdefghi1abcdefghi2abcdefghi3abcdefghi4abcdefghi5abcdefghi6abcdefghi7abcdefghi8abcdefghi9abcdefghi1"')
+        rc, res = Api.download_files_value_invalid(self.jwt)
         self.logger.info('Result: ' + str(res))
         self.assertTrue(int(rc) == 400, "Error in Status Code") 
 
@@ -1955,7 +1954,7 @@ class DownloadFileWordReserved(BaseTest):
         self.logger.info('Executing test...')
 
         #Calling method for list of file 
-        rc, res = Api.download_files_with_path(self.jwt, 'download?alt=media&path=/.tmp/"')
+        rc, res = Api.download_file_word_reserved(self.jwt)
         self.logger.info('Result: ' + str(res))
 
         #Validation of responses   
@@ -1978,7 +1977,7 @@ class DownloadFileNameParameterInvalid(BaseTest):
         self.logger.info('Executing test...')
 
         #Calling method for list of file
-        rc, res = Api.download_files_with_path(self.jwt, 'download?alt=url&caminho=/images/lucerne.jpg"')
+        rc, res = Api.download_file_name_parameter_invalid(self.jwt)
         self.logger.info('Result: ' + str(res))
 
         #Validation of responses   
@@ -2000,7 +1999,7 @@ class DownloadFileParameterAltInvalid(BaseTest):
         self.logger.info('Executing test...')
 
         #Calling method for list of file
-        rc, res = Api.download_files_with_path(self.jwt, 'download?alt=xxx&path=/images/lucerne.jpg"')
+        rc, res = Api.download_file_parameter_alt_invalid(self.jwt)
         self.logger.info('Result: ' + str(res))
 
         #Validation of responses   
@@ -2022,7 +2021,7 @@ class DownloadFileIncompleteCommand(BaseTest):
         self.logger.info('Executing test...')
 
         #Calling method for list of file 
-        rc, res = Api.download_files_with_path(self.jwt, 'download?alt=url"')
+        rc, res = Api.download_file_incomplete_command(self.jwt)
         self.logger.info('Result: ' + str(res))
 
         #Validation of responses   
@@ -2043,7 +2042,7 @@ class DownloadFileWithoutTokenJwt(BaseTest):
         self.logger.info('Executing test...')
 
         #Calling method for list of file 
-        rc, res = Api.download_files_with_path('', 'download?alt=url&path=/images/lucerne.jpg"')
+        rc, res = Api.download_file_without_token('')
         self.logger.info('Result: ' + str(res))
         self.assertTrue(int(rc) == 401, "Error in Status Code") 
 
@@ -2061,8 +2060,8 @@ class DownloadFileNonexistent(BaseTest):
     def runTest(self):
         self.logger.info('Executing test...')
         
-        #Calling method for list of file 
-        rc, res = Api.download_files_with_path(self.jwt, 'download?alt=url&path=/docs/teste.txt')
+        #Calling method for list of file
+        rc, res = Api.download_file_none_existent(self.jwt)
         self.logger.info('Result: ' + str(res))
 
         #Validation of responses   
@@ -2084,7 +2083,7 @@ class DownloadFilePathNonexistent(BaseTest):
         self.logger.info('Executing test...')
 
         #Calling method for list of file
-        rc, res = Api.download_files_with_path(self.jwt, 'download?alt=url&path=xxx/arquivo.txt')
+        rc, res = Api.download_file_path_none_existent(self.jwt)
         self.logger.info('Result: ' + str(res))
 
         #Validation of responses   
@@ -2101,7 +2100,7 @@ class ListFileLimitTenFiles(BaseTest):
         self.assertTrue(self.jwt is not None, "** FAILED ASSERTION: failure to get JWT **")
 
         #Calling method for upload of file
-        Utility.UploadSeveralFiles(self)
+        UploadSeveralFiles(self)
         self.logger.info('Setup executed!')
 
     def runTest(self):
@@ -2114,7 +2113,7 @@ class ListFileLimitTenFiles(BaseTest):
 
     def tearDown(self):
         #Calling method for remove several file
-        Utility.RemoveSeveralFiles(self)
+        RemoveSeveralFiles(self)
 
     
 
@@ -2166,10 +2165,7 @@ class DownloadFileSoundMp3(BaseTest):
         self.logger.info('Teardown executed!')
         super().tearDown()
 
-
-class Utility(BaseTest): 
-
-    def UploadSeveralFiles(self):
+def UploadSeveralFiles(self):
         #Putting file path
         self.file = ROOT_DIR + "/" + "resources/files/arquivo.txt"
 
@@ -2229,8 +2225,7 @@ class Utility(BaseTest):
         self.logger.info('Result: ' + str(res) + ', ' + str(rc))
         self.assertTrue(int(rc) == 201, "Error in Status Code")
 
-
-    def RemoveSeveralFiles(self):
+def RemoveSeveralFiles(self):
         #Calling method for remove of file
         rc, res = Api.remove_stored_file(self.jwt, 'arquivos/arquivo.txt')
         self.logger.info('Result: ' + str(res) + ', ' + str(rc))
@@ -2276,7 +2271,6 @@ class Utility(BaseTest):
         self.logger.info('Result: ' + str(res) + ', ' + str(rc))
         self.assertTrue(int(rc) == 200, "Error in Status Code")
 
-
 class ListThreeLastFiles(BaseTest): 
 
     def setUp(self):
@@ -2286,7 +2280,7 @@ class ListThreeLastFiles(BaseTest):
         self.logger.info("JWT = " + self.jwt)
         self.assertTrue(self.jwt is not None, "** FAILED ASSERTION: failure to get JWT **")
         
-        Utility.UploadSeveralFiles(self)
+        UploadSeveralFiles(self)
         self.logger.info('Setup executed!')
 
     def runTest(self):
@@ -2299,7 +2293,7 @@ class ListThreeLastFiles(BaseTest):
 
     def tearDown(self):
         #Calling method for remove several file
-        Utility.RemoveSeveralFiles(self)
+        RemoveSeveralFiles(self)
 
 class ListFileFilterPathPrefixInvalid(BaseTest): 
 
@@ -2310,14 +2304,14 @@ class ListFileFilterPathPrefixInvalid(BaseTest):
         self.logger.info("JWT = " + self.jwt)
         self.assertTrue(self.jwt is not None, "** FAILED ASSERTION: failure to get JWT **")
 
-        Utility.UploadSeveralFiles(self)
+        UploadSeveralFiles(self)
         self.logger.info('Setup executed!')
 
     def runTest(self):
         self.logger.info('Executing test...')
 
         #Calling method for list of file 
-        rc, res = Api.list_files_with_path(self.jwt, 'list?limit=3&pathPrefix=/invalido')
+        rc, res = Api.list_files_with_path_prefix_invalid(self.jwt)
         self.logger.info('Result: ' + str(res))
 
         #Validation of responses   
@@ -2325,7 +2319,7 @@ class ListFileFilterPathPrefixInvalid(BaseTest):
 
     def tearDown(self):
         #Calling method for remove several file
-        Utility.RemoveSeveralFiles(self)
+        RemoveSeveralFiles(self)
 
 
 class ListFileFilterStartAfterInvalid(BaseTest): 
@@ -2338,14 +2332,14 @@ class ListFileFilterStartAfterInvalid(BaseTest):
         self.assertTrue(self.jwt is not None, "** FAILED ASSERTION: failure to get JWT **")
 
         #Upload several files
-        Utility.UploadSeveralFiles(self)
+        UploadSeveralFiles(self)
         self.logger.info('Setup executed!')
 
     def runTest(self):
         self.logger.info('Executing test...')
 
         #Calling method for list of file 
-        rc, res = Api.list_files_with_path(self.jwt, 'list?limit=3&startAfter=invalido')
+        rc, res = Api.list_files_start_after_invalid(self.jwt)
 
         self.logger.info('Result: ' + str(res))
 
@@ -2353,7 +2347,7 @@ class ListFileFilterStartAfterInvalid(BaseTest):
         self.assertTrue(int(rc) == 200, "Error in Status Code")
     def tearDown(self):
         #Calling method for remove several file
-        Utility.RemoveSeveralFiles(self)
+        RemoveSeveralFiles(self)
 
 
 class ListFileLimitEmpty(BaseTest): 
@@ -2372,7 +2366,7 @@ class ListFileLimitEmpty(BaseTest):
         self.logger.info('Executing test...')
 
         #Calling method for list of file
-        rc, res = Api.list_files_with_path(self.jwt, 'list?limit')
+        rc, res = Api.list_files_limit_empty(self.jwt)
         self.logger.info('Result: ' + str(res))
 
         #Validation of responses   
@@ -2395,7 +2389,7 @@ class ListFileLimitZero(BaseTest):
         self.logger.info('Executing test...')
 
         #Calling method for list of file 
-        rc, res = Api.list_files_with_path(self.jwt, 'list?limit=0')
+        rc, res = Api.list_files_limit_zero(self.jwt)
         self.logger.info('Result: ' + str(res))
 
         #Validation of responses   
@@ -2418,7 +2412,7 @@ class ListFileLimitLessThanZero(BaseTest):
         self.logger.info('Executing test...')
 
         #Calling method for list of file 
-        rc, res = Api.list_files_with_path(self.jwt, 'list?limit=-3')
+        rc, res = Api.list_files_limit_less_than_zero(self.jwt)
         self.logger.info('Result: ' + str(res))
 
         #Validation of responses   
@@ -2435,7 +2429,7 @@ class ListFileLimitPrefixInvalid(BaseTest):
         self.assertTrue(self.jwt is not None, "** FAILED ASSERTION: failure to get JWT **")
 
         #Calling method for upload of file
-        Utility.UploadSeveralFiles(self)
+        UploadSeveralFiles(self)
         self.logger.info('Setup executed!')
 
     def runTest(self):
@@ -2447,7 +2441,7 @@ class ListFileLimitPrefixInvalid(BaseTest):
 
     def tearDown(self):
         #Calling method for remove several file
-        Utility.RemoveSeveralFiles(self)
+        RemoveSeveralFiles(self)
 
 
 
@@ -2465,7 +2459,7 @@ class ListFileLimitNotInteger(BaseTest):
     def runTest(self):
 
         #Calling method for list of file 
-        rc, res = Api.list_files_with_path(self.jwt, 'list?limit=X')
+        rc, res = Api.list_files_limit_not_integer(self.jwt)
         self.logger.info('Result: ' + str(res))
 
         #Validation of responses   
@@ -2488,7 +2482,7 @@ class ListFileLimitWithDoubleValue(BaseTest):
     def runTest(self):
 
         #Calling method for list of file 
-        rc, res = Api.list_files_with_path(self.jwt, 'list?limit=3.1')
+        rc, res = Api.list_files_limit_double_value(self.jwt)
         self.logger.info('Result: ' + str(res))
 
         #Validation of responses   
@@ -2506,12 +2500,12 @@ class ListFileThereIsNotData(BaseTest):
         self.assertTrue(self.jwt is not None, "** FAILED ASSERTION: failure to get JWT **")
 
         #Calling method for upload of file
-        Utility.UploadSeveralFiles(self)
+        UploadSeveralFiles(self)
         self.logger.info('Setup executed!')
 
     def runTest(self):
         #Calling method for list of file
-        rc, res = Api.list_files_with_path(self.jwt, 'list?limit=3&pathPrefix=/automacao"')
+        rc, res = Api.list_file_there_is_not_data(self.jwt)
         self.logger.info('Result: ' + str(res))
 
         #Validation of responses   
@@ -2520,7 +2514,7 @@ class ListFileThereIsNotData(BaseTest):
 
     def tearDown(self):
         #Calling method for remove several file
-        Utility.RemoveSeveralFiles(self)
+        RemoveSeveralFiles(self)
 
 
 
@@ -2538,7 +2532,7 @@ class ListStartFileDoesNotExist(BaseTest):
     def runTest(self):
 
         #Calling method for list of file 
-        rc, res = Api.list_files_with_path(self.jwt, 'list?limit=2&startAfter=test%2Fsample_4.txt"')
+        rc, res = Api.list_start_file_does_not_exist(self.jwt)
         self.logger.info('Result: ' + str(res))
 
         #Validation of responses   
@@ -2574,7 +2568,7 @@ class ListFileInvalidName(BaseTest):
         self.assertTrue(int(rc) == 201, "Error in Status Code")
 
         #Calling method for list of file 
-        rc, res = Api.list_files_with_path(self.jwt, 'list?limit=1&startAfter=teste$#@!%&*"')
+        rc, res = Api.list_file_invalid_name(self.jwt)
         self.logger.info('Result: ' + str(res))
         self.assertTrue(int(rc) == 200, "Error in Status Code")
 
@@ -2620,7 +2614,7 @@ class ListFileTokenJWTEmpty(BaseTest):
         self.logger.info('Executing test...')
 
         #Calling method for list of file 
-        rc, res = Api.list_files_with_path(self.jwt, 'list?limit=3"')
+        rc, res = Api.list_files_limit_three(self.jwt)
         self.logger.info('Result: ' + str(res))
         
         #Validation of responses  
@@ -2643,7 +2637,7 @@ class ListWithoutFileInTheBucket(BaseTest):
         self.logger.info('Executing test...')
 
         #Calling method for list of file 
-        rc, res = Api.list_files_with_path(self.jwt, 'list?limit=5')
+        rc, res = Api.list_files_limit_five(self.jwt)
         self.logger.info('Result: ' + str(res))
         #Validation of responses   
         self.assertTrue(int(rc) == 200, "Error in Status Code")
