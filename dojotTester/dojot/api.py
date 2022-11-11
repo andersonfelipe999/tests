@@ -31,14 +31,21 @@ class DojotAPI:
         """
         LOGGER.debug("Retrieving JWT...")
 
+        #Get token tenant master
         args = {
-            "url": "{0}/auth".format(CONFIG['dojot']['url']),
-            "data": json.dumps({
-                "username": CONFIG['dojot']['user'],
-                "passwd": CONFIG['dojot']['passwd'],
-            }),
+            "url": "{0}/auth/realms/master/protocol/openid-connect/token".format(CONFIG['dojot']['url']),
+            "data": {
+                "client_id": "admin-cli",
+                "grant_type": "password",
+                "scope": "openid",
+                "username": "master",
+                "password": "{0}".format(CONFIG['app']['passwd_master']),
+            },
             "headers": {
-                "Content-Type": "application/json"
+                'Accept': 'text/plain'
+            },
+            "cookies": {
+                'KEYCLOAK_LOCALE': 'en',
             },
         }
 
@@ -46,9 +53,499 @@ class DojotAPI:
         if rc == 429:
             time.sleep(15)
             rc, res = DojotAPI.call_api(requests.post, args)
-        LOGGER.debug(".. retrieved JWT. Result code: " + str(rc))
-        return res["jwt"]
+        
+        token=res["access_token"]
 
+        #Check if the tenant has already been created
+        args = {
+            "url": "{0}/auth/admin/realms/{1}/users".format(CONFIG['dojot']['url'],CONFIG['app']['tenant']),
+            "headers": {
+                'Authorization': "Bearer {0}".format(res["access_token"]),
+                'Content-type': 'application/json;charset=UTF-8',
+                'Accept': 'application/json',
+            },
+        }        
+
+        rc, res = DojotAPI.call_api(requests.get, args)
+        res = json.dumps(res)
+
+        #Created realm, if was not created
+        if 'id' not in res:
+            headers = {
+                'Authorization': "Bearer {0}".format(token),
+                'Content-Type': 'application/json',
+            }
+
+            with open('resources/files/realm.json') as f:
+                data = f.read().replace('\n', '')
+
+            requests.post("{0}/auth/admin/realms".format(CONFIG['dojot']['url']), headers=headers, data=data)
+
+            #Updated new token 
+
+            args = {
+                "url": "{0}/auth/realms/master/protocol/openid-connect/token".format(CONFIG['dojot']['url']),
+                "data": {
+                    "client_id": "admin-cli",
+                    "grant_type": "password",
+                    "scope": "openid",
+                    "username": "master",
+                    "password": "master",
+                },
+                "headers": {
+                    'Accept': 'text/plain'
+                },
+                "cookies": {
+                    'KEYCLOAK_LOCALE': 'en',
+                },
+            }
+
+            rc, res = DojotAPI.call_api(requests.post, args)
+
+            #GET USER ID
+            token=res["access_token"]
+            args = {
+                "url": "{0}/auth/admin/realms/{1}/users".format(CONFIG['dojot']['url'],CONFIG['app']['tenant']),
+                "headers": {
+                    'Authorization': "Bearer {0}".format(token),
+                    'Content-type': 'application/json;charset=UTF-8',
+                    'Accept': 'application/json',
+                },
+            }        
+
+            rc, res = DojotAPI.call_api(requests.get, args)
+            LOGGER.debug(".. retrieved JWT. Result code: " + str(rc))
+            
+            admin_user = res[0]['id']
+            
+            #Set password of user admin of new tenant 
+            args = {
+                "url": "{0}/auth/admin/realms/{1}/users/{2}/reset-password".format(CONFIG['dojot']['url'],CONFIG['app']['tenant'],admin_user),
+                "headers": {
+                    'Authorization': "Bearer {0}".format(token),
+                    'Content-type': 'application/json;charset=UTF-8',
+                    'Accept': 'application/json',
+                },
+                "json": {
+                    'type': 'password',
+                    'value': '{0}'.format(CONFIG['dojot']['passwd']),
+                    'temporary': False,
+                },
+            }        
+
+            rc, res = DojotAPI.call_api(requests.put, args)
+
+            #Get client id of parameter "dev-test-cli"
+            args = {
+                "url": "{0}/auth/admin/realms/{1}/clients".format(CONFIG['dojot']['url'],CONFIG['app']['tenant']),
+                "headers": {
+                    'Authorization': "Bearer {0}".format(token),
+                    'Accept': 'application/json',
+                },
+                "params": {
+                    'clientId': 'dev-test-cli',
+                },
+            }        
+
+            rc, res = DojotAPI.call_api(requests.get, args)
+            
+            client_id = res[0]['id']
+
+            #Enabled parameter "dev-test-cli"
+            args = {
+                "url": "{0}/auth/admin/realms/{1}/clients/{2}".format(CONFIG['dojot']['url'],CONFIG['app']['tenant'],client_id),
+                "headers": {
+                    'Authorization': "Bearer {0}".format(token),
+                },
+                "json": {
+                    'enabled': True,
+                },
+            }  
+
+            rc, res = DojotAPI.call_api(requests.put, args)
+        #Logging with new tenant created
+        args = {
+            "url": "{0}/auth/realms/{1}/protocol/openid-connect/token".format(CONFIG['dojot']['url'],CONFIG['app']['tenant']),
+            "data": {
+                "client_id": "dev-test-cli",
+                "grant_type": "password",
+                "scope": "openid",
+                "username": "admin",
+                "password": "{0}".format(CONFIG['dojot']['passwd']),
+            },
+            "headers": {
+                'Accept': 'text/plain'
+            },
+            "cookies": {
+                'KEYCLOAK_LOCALE': 'en',
+            },
+        }
+
+        rc, res = DojotAPI.call_api(requests.post, args)
+
+        print("TOKEN OF TENANT:")
+        print(res["access_token"])
+        return res["access_token"]
+
+    @staticmethod
+    def create_cron_job(jwt: str, device_id: str, data: str or dict) -> tuple:
+        """
+
+        Returns the configured cron job or a error message.
+        """
+        LOGGER.debug("configuring cron job...")
+
+        if isinstance(data, dict):
+            data = json.dumps(data)
+
+        args = {
+        "url": "{0}/cron/v1/jobs".format(CONFIG['dojot']['url']),
+        "headers": {
+            "Content-Type": "application/json",
+            "Authorization": "Bearer {0}".format(jwt),
+        },
+        "data": data,
+        }
+
+        result_code, res = DojotAPI.call_api(requests.post, args)
+
+        LOGGER.debug("... configured cron job")
+        return result_code, res
+
+    @staticmethod
+    def get_cron_jobs(jwt: str) -> tuple:
+        """
+
+        Returns the configured cron job or a error message.
+        """
+        LOGGER.debug("retrieving cron jobs...")
+
+        args = {
+            "url": "{0}/cron/v1/jobs".format(CONFIG['dojot']['url']),
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt),
+            }
+        }
+
+        result_code, res = DojotAPI.call_api(requests.get, args)
+
+        LOGGER.debug("... retrieved cron jobs")
+        return result_code, res
+    
+    @staticmethod
+    def remove_cron_jobs(jwt: str) -> tuple:
+        """
+
+        Returns the configured cron job or a error message.
+        """
+        LOGGER.debug("removing cron jobs...")
+
+        args = {
+            "url": "{0}/cron/v1/jobs".format(CONFIG['dojot']['url']),
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt),
+            }
+        }
+
+        result_code, res = DojotAPI.call_api(requests.delete, args)
+
+        LOGGER.debug("... removed cron jobs")
+        return result_code, res
+
+    @staticmethod
+    def publish_http_agent_insegure_mode(jwt: str,device_id: str) -> tuple:
+
+        """
+        Returns publish with service HTTP Agent Insecure Mode.
+        """
+        LOGGER.debug("Publish HTTP Agent ...")
+
+        #Get Basic Credentials
+
+        url = "{0}:{1}/basic-auth/v1/devices/{2}/basic-credentials".format(CONFIG['basic']['url'],CONFIG['basic']['port'],device_id)
+        headers = {
+            'Authorization': "Bearer {0}".format(jwt),
+        }
+        res = requests.post(url, headers=headers)
+
+
+        response = res.json()
+        basicAuth = response["basicAuth"]
+        credentials = response["credentials"]  
+
+        username = credentials["username"]
+        password = credentials["password"]
+        
+        print(username)
+        print(password)
+        print(basicAuth)
+
+	    #Get Device Authentication
+
+        url= '{0}:{1}/basic-auth/v1/internal/authentication'.format(CONFIG['basic']['url'],CONFIG['basic']['port'])
+        headers = {
+            'Authorization': "Bearer {0}".format(jwt),
+            'Content-Type': 'application/json',
+        }
+
+        data = '{\n    "username": ' + username + ',\n    "password": ' + password + '\n}'
+
+        response = requests.post(url, headers=headers, data=data)
+
+        #Publish
+
+        url = '{0}:{1}/http-agent/v1/unsecure/incoming-messages'.format(CONFIG['http']['url'],CONFIG['http']['port'])
+        headers = {
+        'Authorization': basicAuth,
+        }
+
+        json_data = {
+        'data': {
+        'temperature': 26,
+        },
+        }
+
+        response = requests.post(url, headers=headers, json=json_data)
+
+        LOGGER.debug("sending request...")
+
+        LOGGER.debug("...done ")
+        return response.status_code
+
+    @staticmethod
+    def publish_http_agent_insegure_mode_simple_device(jwt: str,device_id: str) -> tuple:
+
+        """
+        Returns publish with service HTTP Agent Insecure Mode.
+        """
+        LOGGER.debug("Publish HTTP Agent ...")
+
+        #Get Basic Credentials
+        args = {
+            "url": "{0}:{1}/basic-auth/v1/devices/{2}/basic-credentials".format(CONFIG['basic']['url'],CONFIG['basic']['port'],device_id),
+            "headers": {
+                "Authorization": "Bearer {0}".format(jwt),
+            }
+        }
+
+        res = DojotAPI.call_api(requests.post, args)
+        
+        response = res[1]
+
+        credentials = response["credentials"]
+        username = credentials["username"]
+        password = credentials["password"]
+        basicAuth = response["basicAuth"]
+
+	    #Get Device Authentication
+
+        args = {
+            "url": "{0}:{1}/basic-auth/v1/internal/authentication".format(CONFIG['basic']['url'],CONFIG['basic']['port']),
+            "headers": {
+                'Content-Type': 'application/json',
+                "Authorization": "Bearer {0}".format(jwt),
+            },
+            "data": '{\n    "username": ' + username + ',\n    "password": ' + password + '\n}',
+        }
+
+        response = DojotAPI.call_api(requests.post, args)
+
+        #Publish
+
+        url = '{0}:{1}/http-agent/v1/unsecure/incoming-messages'.format(CONFIG['http']['url'],CONFIG['http']['port'])
+        headers = {
+        'Authorization': basicAuth,
+        }
+
+        json_data = {
+        'data': {
+        'temperature': 26,
+        },
+        }
+
+        response = requests.post(url, headers=headers, json=json_data)
+
+        LOGGER.debug("sending request...")
+
+        LOGGER.debug("...done ")
+        return response.status_code
+
+    @staticmethod
+    def publish_http_agent_insegure_mode_device_token(jwt: str,device_id: str) -> tuple:
+
+        """
+        Returns publish with service HTTP Agent Insecure Mode.
+        """
+        LOGGER.debug("Publish HTTP Agent ...")
+
+        #Get Basic Credentials
+        args = {
+            "url": "{0}:{1}/basic-auth/v1/devices/{2}/basic-credentials".format(CONFIG['basic']['url'],CONFIG['basic']['port'],device_id),
+            "headers": {
+                "Authorization": "Bearer {0}".format(jwt),
+            }
+        }
+
+        res = DojotAPI.call_api(requests.post, args)
+        
+        response = res[1]
+
+        credentials = response["credentials"]
+        username = credentials["username"]
+        password = credentials["password"]
+        basicAuth = response["basicAuth"]
+
+	    #Get Device Authentication
+
+        args = {
+            "url": "{0}:{1}/basic-auth/v1/internal/authentication".format(CONFIG['basic']['url'],CONFIG['basic']['port']),
+            "headers": {
+                'Content-Type': 'application/json',
+                "Authorization": "Bearer {0}".format(jwt),
+            },
+            "data": '{\n    "username": ' + username + ',\n    "password": ' + password + '\n}',
+        }
+
+        response = DojotAPI.call_api(requests.post, args)
+
+        #Publish
+
+        url = '{0}:{1}/http-agent/v1/unsecure/incoming-messages'.format(CONFIG['http']['url'],CONFIG['http']['port'])
+        headers = {
+        'Authorization': basicAuth,
+        }
+
+        json_data = {
+        'data': {
+        'jwt': 'qualidade',
+        },
+        }
+
+        response = requests.post(url, headers=headers, json=json_data)
+
+        LOGGER.debug("sending request...")
+
+        LOGGER.debug("...done ")
+        return response.status_code
+    
+    @staticmethod
+    def publish_http_agent_insegure_mode_device_linha_1_bool(jwt: str,device_id: str) -> tuple:
+
+        """
+        Returns publish with service HTTP Agent Insecure Mode.
+        """
+        LOGGER.debug("Publish HTTP Agent ...")
+
+        #Get Basic Credentials
+        args = {
+            "url": "{0}:{1}/basic-auth/v1/devices/{2}/basic-credentials".format(CONFIG['basic']['url'],CONFIG['basic']['port'],device_id),
+            "headers": {
+                "Authorization": "Bearer {0}".format(jwt),
+            }
+        }
+
+        res = DojotAPI.call_api(requests.post, args)
+        
+        response = res[1]
+
+        credentials = response["credentials"]
+        username = credentials["username"]
+        password = credentials["password"]
+        basicAuth = response["basicAuth"]
+
+	    #Get Device Authentication
+
+        args = {
+            "url": "{0}:{1}/basic-auth/v1/internal/authentication".format(CONFIG['basic']['url'],CONFIG['basic']['port']),
+            "headers": {
+                'Content-Type': 'application/json',
+                "Authorization": "Bearer {0}".format(jwt),
+            },
+            "data": '{\n    "username": ' + username + ',\n    "password": ' + password + '\n}',
+        }
+
+        response = DojotAPI.call_api(requests.post, args)
+
+        #Publish
+
+        url = '{0}:{1}/http-agent/v1/unsecure/incoming-messages'.format(CONFIG['http']['url'],CONFIG['http']['port'])
+        headers = {
+        'Authorization': basicAuth,
+        }
+
+        json_data = {
+        'data': {
+        'bool': True,
+        },
+        }
+
+        response = requests.post(url, headers=headers, json=json_data)
+
+        LOGGER.debug("sending request...")
+
+        LOGGER.debug("...done ")
+        return response.status_code
+
+    @staticmethod
+    def publish_http_agent_insegure_mode_device_linha_1_geo(jwt: str,device_id: str) -> tuple:
+
+        """
+        Returns publish with service HTTP Agent Insecure Mode.
+        """
+        LOGGER.debug("Publish HTTP Agent ...")
+
+        #Get Basic Credentials
+        args = {
+            "url": "{0}:{1}/basic-auth/v1/devices/{2}/basic-credentials".format(CONFIG['basic']['url'],CONFIG['basic']['port'],device_id),
+            "headers": {
+                "Authorization": "Bearer {0}".format(jwt),
+            }
+        }
+
+        res = DojotAPI.call_api(requests.post, args)
+        
+        response = res[1]
+
+        credentials = response["credentials"]
+        username = credentials["username"]
+        password = credentials["password"]
+        basicAuth = response["basicAuth"]
+
+	    #Get Device Authentication
+
+        args = {
+            "url": "{0}:{1}/basic-auth/v1/internal/authentication".format(CONFIG['basic']['url'],CONFIG['basic']['port']),
+            "headers": {
+                'Content-Type': 'application/json',
+                "Authorization": "Bearer {0}".format(jwt),
+            },
+            "data": '{\n    "username": ' + username + ',\n    "password": ' + password + '\n}',
+        }
+
+        response = DojotAPI.call_api(requests.post, args)
+
+        #Publish
+
+        url = '{0}:{1}/http-agent/v1/unsecure/incoming-messages'.format(CONFIG['http']['url'],CONFIG['http']['port'])
+        headers = {
+        'Authorization': basicAuth,
+        }
+
+        json_data = {
+        'data': {
+        'gps': '-22.890970, -47.063006',
+        },
+        }
+
+        response = requests.post(url, headers=headers, json=json_data)
+
+        LOGGER.debug("sending request...")
+
+        LOGGER.debug("...done ")
+        return response.status_code
+    
     @staticmethod
     def create_devices(jwt: str, template_id: str, total: int, batch: int) -> None:
         """
