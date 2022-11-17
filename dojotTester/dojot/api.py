@@ -38,8 +38,8 @@ class DojotAPI:
                 "client_id": "admin-cli",
                 "grant_type": "password",
                 "scope": "openid",
-                "username": "master",
-                "password": "{0}".format(CONFIG['app']['passwd_master']),
+                "username": "{0}".format(CONFIG['app']['user_keycloak']),
+                "password": "{0}".format(CONFIG['app']['passwd_keycloak']),
             },
             "headers": {
                 'Accept': 'text/plain'
@@ -89,8 +89,8 @@ class DojotAPI:
                     "client_id": "admin-cli",
                     "grant_type": "password",
                     "scope": "openid",
-                    "username": "master",
-                    "password": "master",
+                    "username": "{0}".format(CONFIG['app']['user_keycloak']),
+                    "password": "{0}".format(CONFIG['app']['passwd_keycloak']),
                 },
                 "headers": {
                     'Accept': 'text/plain'

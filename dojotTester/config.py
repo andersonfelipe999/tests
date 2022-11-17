@@ -5,7 +5,8 @@ import os
 CONFIG = {
     'app': {
         'tenant': os.environ.get("TENANT", "automacao"),
-        'passwd_master': os.environ.get("PASSWD_MASTER", "master"),    
+        'passwd_keycloak': os.environ.get("PASSWD_KEYCLOAK", "master"),
+        'user_keycloak': os.environ.get("USER_KEYCLOAK", "master"),    
     },
 
     'security': {
