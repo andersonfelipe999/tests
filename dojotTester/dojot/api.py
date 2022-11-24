@@ -23,9 +23,8 @@ class DojotAPI:
     """
     Utility class with API calls to Dojot.
     """
-
     @staticmethod
-    def get_jwt() -> str:
+    def get_token_tenent_master() -> str:
         """
         Request a JWT token.
         """
@@ -53,117 +52,26 @@ class DojotAPI:
         if rc == 429:
             time.sleep(15)
             rc, res = DojotAPI.call_api(requests.post, args)
+
+        return res["access_token"]
+    
+    @staticmethod
+    def create_tenant(token: str):
         
-        token=res["access_token"]
+        LOGGER.debug("Create Tenant...")
 
-        #Check if the tenant has already been created
-        args = {
-            "url": "{0}/auth/admin/realms/{1}/users".format(CONFIG['dojot']['url'],CONFIG['app']['tenant']),
-            "headers": {
-                'Authorization': "Bearer {0}".format(res["access_token"]),
-                'Content-type': 'application/json;charset=UTF-8',
-                'Accept': 'application/json',
-            },
-        }        
-
-        rc, res = DojotAPI.call_api(requests.get, args)
-        res = json.dumps(res)
-
-        #Created realm, if was not created
-        if 'id' not in res:
-            headers = {
-                'Authorization': "Bearer {0}".format(token),
+        headers = {
+                'Authorization': "Bearer "+ token,
                 'Content-Type': 'application/json',
             }
+        with open('resources/files/realm.json') as f:
+            data = f.read().replace('\n', '')
+        requests.post("{0}/auth/admin/realms".format(CONFIG['dojot']['url']), headers=headers, data=data)
+        
 
-            with open('resources/files/realm.json') as f:
-                data = f.read().replace('\n', '')
+    @staticmethod
+    def login_new_tenant():
 
-            requests.post("{0}/auth/admin/realms".format(CONFIG['dojot']['url']), headers=headers, data=data)
-
-            #Updated new token 
-
-            args = {
-                "url": "{0}/auth/realms/master/protocol/openid-connect/token".format(CONFIG['dojot']['url']),
-                "data": {
-                    "client_id": "admin-cli",
-                    "grant_type": "password",
-                    "scope": "openid",
-                    "username": "{0}".format(CONFIG['app']['user_keycloak']),
-                    "password": "{0}".format(CONFIG['app']['passwd_keycloak']),
-                },
-                "headers": {
-                    'Accept': 'text/plain'
-                },
-                "cookies": {
-                    'KEYCLOAK_LOCALE': 'en',
-                },
-            }
-
-            rc, res = DojotAPI.call_api(requests.post, args)
-
-            #GET USER ID
-            token=res["access_token"]
-            args = {
-                "url": "{0}/auth/admin/realms/{1}/users".format(CONFIG['dojot']['url'],CONFIG['app']['tenant']),
-                "headers": {
-                    'Authorization': "Bearer {0}".format(token),
-                    'Content-type': 'application/json;charset=UTF-8',
-                    'Accept': 'application/json',
-                },
-            }        
-
-            rc, res = DojotAPI.call_api(requests.get, args)
-            LOGGER.debug(".. retrieved JWT. Result code: " + str(rc))
-            
-            admin_user = res[0]['id']
-            
-            #Set password of user admin of new tenant 
-            args = {
-                "url": "{0}/auth/admin/realms/{1}/users/{2}/reset-password".format(CONFIG['dojot']['url'],CONFIG['app']['tenant'],admin_user),
-                "headers": {
-                    'Authorization': "Bearer {0}".format(token),
-                    'Content-type': 'application/json;charset=UTF-8',
-                    'Accept': 'application/json',
-                },
-                "json": {
-                    'type': 'password',
-                    'value': '{0}'.format(CONFIG['dojot']['passwd']),
-                    'temporary': False,
-                },
-            }        
-
-            rc, res = DojotAPI.call_api(requests.put, args)
-
-            #Get client id of parameter "dev-test-cli"
-            args = {
-                "url": "{0}/auth/admin/realms/{1}/clients".format(CONFIG['dojot']['url'],CONFIG['app']['tenant']),
-                "headers": {
-                    'Authorization': "Bearer {0}".format(token),
-                    'Accept': 'application/json',
-                },
-                "params": {
-                    'clientId': 'dev-test-cli',
-                },
-            }        
-
-            rc, res = DojotAPI.call_api(requests.get, args)
-            
-            client_id = res[0]['id']
-
-            #Enabled parameter "dev-test-cli"
-            args = {
-                "url": "{0}/auth/admin/realms/{1}/clients/{2}".format(CONFIG['dojot']['url'],CONFIG['app']['tenant'],client_id),
-                "headers": {
-                    'Authorization': "Bearer {0}".format(token),
-                },
-                "json": {
-                    'enabled': True,
-                },
-            }  
-
-            rc, res = DojotAPI.call_api(requests.put, args)
-        #Logging with new tenant created
         args = {
             "url": "{0}/auth/realms/{1}/protocol/openid-connect/token".format(CONFIG['dojot']['url'],CONFIG['app']['tenant']),
             "data": {
@@ -182,10 +90,138 @@ class DojotAPI:
         }
 
         rc, res = DojotAPI.call_api(requests.post, args)
+        LOGGER.info('TOKEN OF TENANT:')
+        LOGGER.info(res["access_token"])
 
-        print("TOKEN OF TENANT:")
-        print(res["access_token"])
         return res["access_token"]
+
+    @staticmethod
+    def get_user_id(token: str):
+
+        args = {
+                "url": "{0}/auth/admin/realms/{1}/users".format(CONFIG['dojot']['url'],CONFIG['app']['tenant']),
+                "headers": {
+                    'Authorization': "Bearer " + token,
+                    'Content-type': 'application/json;charset=UTF-8',
+                    'Accept': 'application/json',
+                },
+            }        
+
+        rc, res = DojotAPI.call_api(requests.get, args)
+        LOGGER.debug(".. retrieved JWT. Result code: " + str(rc))
+            
+        admin_user = res[0]['id']
+        
+        return admin_user
+
+    @staticmethod
+    def get_client_id(token: str,parameter: str):
+
+        args = {
+                "url": "{0}/auth/admin/realms/{1}/clients".format(CONFIG['dojot']['url'],CONFIG['app']['tenant']),
+                "headers": {
+                    'Authorization': "Bearer " + token,
+                    'Accept': 'application/json',
+                },
+                "params": {
+                    'clientId': parameter,
+                },
+            }        
+
+        rc, res = DojotAPI.call_api(requests.get, args)
+            
+        client_id = res[0]['id']
+        
+        return client_id
+    
+    @staticmethod
+    def enable_parameter_by_client_id(token: str,client_id: str):
+
+        args = {
+                "url": "{0}/auth/admin/realms/{1}/clients/{2}".format(CONFIG['dojot']['url'],CONFIG['app']['tenant'],client_id),
+                "headers": {
+                    'Authorization': "Bearer " + token,
+                },
+                "json": {
+                    'enabled': True,
+                },
+            }  
+
+        rc, res = DojotAPI.call_api(requests.put, args)
+    
+
+    @staticmethod
+    def set_password_by_user_id(token: str,user_id: str):
+        args = {
+                "url": "{0}/auth/admin/realms/{1}/users/{2}/reset-password".format(CONFIG['dojot']['url'],CONFIG['app']['tenant'],user_id),
+                "headers": {
+                    'Authorization': "Bearer " + token,
+                    'Content-type': 'application/json;charset=UTF-8',
+                    'Accept': 'application/json',
+                },
+                "json": {
+                    'type': 'password',
+                    'value': '{0}'.format(CONFIG['dojot']['passwd']),
+                    'temporary': False,
+                },
+            }        
+
+        rc, res = DojotAPI.call_api(requests.put, args)
+        
+    @staticmethod
+    def check_tenant_exists(token: str):
+        args = {
+            "url": "{0}/auth/admin/realms/{1}/users".format(CONFIG['dojot']['url'],CONFIG['app']['tenant']),
+            "headers": {
+                'Authorization': "Bearer " + token,
+                'Content-type': 'application/json;charset=UTF-8',
+                'Accept': 'application/json',
+            },
+        }        
+
+        rc, res = DojotAPI.call_api(requests.get, args)
+        res = json.dumps(res)
+        
+        return res
+
+    @staticmethod
+    def get_jwt() -> str:
+        """
+        Request a JWT token.
+        """
+
+        # #Get token tenant master
+        Api = DojotAPI()
+        token = Api.get_token_tenent_master()
+
+        #Check if the tenant has already been created
+        res = Api.check_tenant_exists(token)
+
+        #Created realm, if was not created
+        if 'id' not in res:
+            #Create Tenant
+            Api.create_tenant(token)
+
+            #Updated new token 
+            token =Api.get_token_tenent_master()
+
+            #Get user id
+            admin_user = Api.get_user_id(token)
+
+            #Set password of user admin of new tenant 
+            Api.set_password_by_user_id(token,admin_user)
+
+            #Get client id of parameter "dev-test-cli"
+            client_id = Api.get_client_id(token,'dev-test-cli')
+
+            #Enabled parameter "dev-test-cli"
+            Api.enable_parameter_by_client_id(token,client_id)
+
+        #Logging with new tenant created
+        newToken = Api.login_new_tenant()
+
+        return newToken
+    
 
     @staticmethod
     def create_cron_job(jwt: str, device_id: str, data: str or dict) -> tuple:
@@ -278,9 +314,6 @@ class DojotAPI:
         username = credentials["username"]
         password = credentials["password"]
         
-        print(username)
-        print(password)
-        print(basicAuth)
 
 	    #Get Device Authentication
 

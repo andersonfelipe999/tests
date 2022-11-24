@@ -561,7 +561,7 @@ class SanityTest(BaseTest):
                     "Authorization": "Bearer " + str(jwt),
                     "Content-Type": "application/json"
                     },
-                "url": "{0}:{1}/device/{2}/actuate".format(CONFIG['device_maneger']['url'],CONFIG['device_maneger']['port'],dev_id),
+                "url": "{0}:{1}/device/{2}/actuate".format(CONFIG['device-maneger']['url'],CONFIG['device-maneger']['port'],dev_id),
                 "body": {
                     "attrs": {
                         "mensagem": "keep alive"

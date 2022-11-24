@@ -28,9 +28,9 @@ CONFIG = {
         'qos': int(os.environ.get("DOJOT_MQTT_QOS", 0)),
     },
     
-    'device_maneger': {
+    'device-maneger': {
         'host': os.environ.get("DOJOT_MQTT_HOST", "localhost"),
-        'url': os.environ.get("DOJOT_DEVICE_URL", "http://device-manager"),
+        'url': os.environ.get("DOJOT_DEVICE_URL", "http://device-manager-sidecar"),
         'port': int(os.environ.get("DOJOT_DEVICE_PORT", 5000)),
     },
 
