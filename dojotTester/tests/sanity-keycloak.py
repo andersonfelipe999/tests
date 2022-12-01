@@ -39,7 +39,8 @@ class SanityTest(BaseTest):
         template_ids = []
         for template in templates:
             rc, template_id = Api.create_template(jwt, json.dumps(template))
-
+            self.logger.info(rc)
+            self.logger.info(template_id)
             template_ids.append(template_id["template"]["id"]) if rc == 200 else template_ids.append(None)
 
             
@@ -60,10 +61,10 @@ class SanityTest(BaseTest):
 
     def runTest(self):
         self.logger.info('Sanity test')
-        time.sleep(30)
             
         self.logger.debug('Obtenção do token...')
         jwt = Api.get_jwt()
+        time.sleep(30)
 
         templates = []
         self.logger.info('Criação dos templates...')
@@ -348,6 +349,13 @@ class SanityTest(BaseTest):
                 {"label": "timestamp", "type": "dynamic", "value_type": "integer"}
             ]
         })
+        templates.append({
+            "label": "basic_template",
+            "attrs": [
+                {"label": "first_attribute", "type": "dynamic", "value_type": "float"},
+                {"label": "second_attribute", "type": "dynamic", "value_type": "integer"}
+            ]
+        })
 
         template_ids = self.createTemplates(jwt, templates)
         self.logger.info("Templates criados. IDs: " + str(template_ids))
@@ -380,7 +388,7 @@ class SanityTest(BaseTest):
         
 
         # publicações
-        
+        time.sleep(10)
         dev_id = Api.get_deviceid_by_label(jwt, "linha_1")
         dev_topic = CONFIG['app']['tenant'] + ":" + dev_id + "/attrs"
         dev = MQTTClient(dev_id)
@@ -472,6 +480,7 @@ class SanityTest(BaseTest):
         dev_id = Api.get_deviceid_by_label(jwt, "SensorNivel")
 
         dev_topic = CONFIG['app']['tenant'] + ":" + dev_id + "/attrs"
+        dev = MQTTClient(dev_id)
         self.logger.info("publicando com dispositivo: " + dev_id + ", SensorNivel")
         dev.publish(dev_topic, {"nivel": 1})
         time.sleep(5)
@@ -486,32 +495,32 @@ class SanityTest(BaseTest):
 
 
         # TESTE HTTP AGENT 
-        self.logger.info("Starting Http Agent Insecure Mode")
-        dev_id = add_a_simple_device(self, jwt)
+        # self.logger.info("Starting Http Agent Insecure Mode")
+        # dev_id = add_a_simple_device(self, jwt)
         
 
-        publish_http_agent = Api.publish_http_agent_insegure_mode_simple_device(jwt,dev_id)
-        self.assertTrue(publish_http_agent == 204, "Invalid Code")
-        self.logger.info('Device created : ' + dev_id)
+        # publish_http_agent = Api.publish_http_agent_insegure_mode_simple_device(jwt,dev_id)
+        # self.assertTrue(publish_http_agent == 204, "Invalid Code")
+        # self.logger.info('Device created : ' + dev_id)
 
-        dev_id = Api.get_deviceid_by_label(jwt, "token")
-        publish_http_agent = Api.publish_http_agent_insegure_mode_device_token(jwt,dev_id)
-        self.assertTrue(publish_http_agent == 204, "Invalid Code")
-        self.logger.info('Device created : ' + dev_id)
-
-
-        dev_id = Api.get_deviceid_by_label(jwt, "linha_1")
-        publish_http_agent = Api.publish_http_agent_insegure_mode_device_linha_1_bool(jwt,dev_id)
-        self.assertTrue(publish_http_agent == 204, "Invalid Code")
-        self.logger.info('Device created : ' + dev_id)
+        # dev_id = Api.get_deviceid_by_label(jwt, "token")
+        # publish_http_agent = Api.publish_http_agent_insegure_mode_device_token(jwt,dev_id)
+        # self.assertTrue(publish_http_agent == 204, "Invalid Code")
+        # self.logger.info('Device created : ' + dev_id)
 
 
-        publish_http_agent = Api.publish_http_agent_insegure_mode_device_linha_1_geo(jwt,dev_id)
-        self.assertTrue(publish_http_agent == 204, "Invalid Code")
-        self.logger.info('Device created : ' + dev_id)
+        # dev_id = Api.get_deviceid_by_label(jwt, "linha_1")
+        # publish_http_agent = Api.publish_http_agent_insegure_mode_device_linha_1_bool(jwt,dev_id)
+        # self.assertTrue(publish_http_agent == 204, "Invalid Code")
+        # self.logger.info('Device created : ' + dev_id)
 
-        self.logger.info("Finished Http Agent ...")
-        time.sleep(3)    
+
+        # publish_http_agent = Api.publish_http_agent_insegure_mode_device_linha_1_geo(jwt,dev_id)
+        # self.assertTrue(publish_http_agent == 204, "Invalid Code")
+        # self.logger.info('Device created : ' + dev_id)
+
+        # self.logger.info("Finished Http Agent ...")
+        # time.sleep(3)    
 
         self.logger.info("Starting test Cron")
 
@@ -573,6 +582,7 @@ class SanityTest(BaseTest):
 
         rc, res = Api.create_cron_job(jwt, str(dev_id), json.dumps(data))
         self.logger.info('Result: ' + str(res))
+        self.logger.info(rc)
         self.assertTrue(int(rc) == 201, "codigo inesperado")
 
         #CHECANDO OS AGENDAMENTOS DO CRON
@@ -587,6 +597,7 @@ class SanityTest(BaseTest):
         self.logger.info('Removendo os agendamentos')
         rc, res = Api.remove_cron_jobs(jwt)
         self.logger.info("Result: " + str(res))
+        self.logger.info(rc)
         self.assertTrue(rc == 204, "** FAILED ASSERTION: Unexpected count value")
 
         #RETRIVER
@@ -594,6 +605,8 @@ class SanityTest(BaseTest):
         self.logger.info("Validação dos dados...")
 
         dev_id = Api.get_deviceid_by_label(jwt, "linha_1")
+        self.logger.info("dispositivo linha_1 tem o device id : " + dev_id )
+        self.logger.info("o atributo que vou recuperar : velocidade ")
         rc, count = get_retriever_count_attr(self, jwt, dev_id, "velocidade")
         self.assertTrue(rc == 200, "** FAILED ASSERTION: received an unexpected result code: " + str(rc) + " **")
         self.assertTrue(count == 2, "** FAILED ASSERTION: Unexpected count value: " + str(count) + " **")
@@ -601,47 +614,63 @@ class SanityTest(BaseTest):
         time.sleep(3)
 
         rc, count = get_retriever_count_attr(self, jwt, dev_id, "gps")
+        self.logger.info("dispositivo linha_1 tem o device id : " + dev_id )
+        self.logger.info("o atributo que vou recuperar : gps ")
         self.logger.info("total de registros: " + str(count))
         self.assertTrue(count == 2, "** FAILED ASSERTION: received an unexpected count **")
         time.sleep(3)
 
 
         dev_id = Api.get_deviceid_by_label(jwt, "dispositivo")
+        self.logger.info(" o device dispositivo  tem o device id : " + dev_id )
+        self.logger.info("o atributo que vou recuperar : int ")
         rc, count = get_retriever_count_attr(self, jwt, dev_id, "int")
         self.logger.info("total de registros: " + str(count))
         self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
 
         dev_id = Api.get_deviceid_by_label(jwt, "anemometro")
+        self.logger.info("dispositivo anemometro tem o device id : " + dev_id )
+        self.logger.info("o atributo que vou recuperar : velocidade ")
         rc, count = get_retriever_count_attr(self, jwt, dev_id, "velocidade")
         self.logger.info("total de registros: " + str(count))
         self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
         time.sleep(3)
 
         dev_id = Api.get_deviceid_by_label(jwt, "barometro")
+        self.logger.info("dispositivo barometro tem o device id : " + dev_id )
+        self.logger.info("o atributo que vou recuperar : pressao ")
         rc, count = get_retriever_count_attr(self, jwt, dev_id, "pressao")
         self.logger.info("total de registros: " + str(count))
         self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
         time.sleep(3)
 
         dev_id = Api.get_deviceid_by_label(jwt, "higrometro")
+        self.logger.info("dispositivo higrometro tem o device id : " + dev_id )
+        self.logger.info("o atributo que vou recuperar : umidade ")
         rc, count = get_retriever_count_attr(self, jwt, dev_id, "umidade")
         self.logger.info("total de registros: " + str(count))
         self.assertTrue(count == 2, "** FAILED ASSERTION: received an unexpected count **")
         time.sleep(3)
 
         dev_id = Api.get_deviceid_by_label(jwt, "termometro Celsius")
+        self.logger.info("dispositivo termometro Celsius tem o device id : " + dev_id )
+        self.logger.info("o atributo que vou recuperar : temperatura ")
         rc, count = get_retriever_count_attr(self, jwt, dev_id, "temperatura")
         self.logger.info("total de registros: " + str(count))
         self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
         time.sleep(3)
 
         dev_id = Api.get_deviceid_by_label(jwt, "device")
+        self.logger.info("o dispositivo device tem o id : " + dev_id )
+        self.logger.info("o atributo que vou recuperar : bool ")
         rc, count = get_retriever_count_attr(self, jwt, dev_id, "bool")
         self.logger.info("total de registros: " + str(count))
         self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
         time.sleep(3)
 
         dev_id = Api.get_deviceid_by_label(jwt, "dispositivo")
+        self.logger.info("o device dispositivo tem o id : " + dev_id )
+        self.logger.info("o atributo que vou recuperar : bool ")
         rc, res = get_retriever_count_attr(self, jwt, dev_id, "bool")
         self.logger.info("total de registros: " + str(count))
         self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
@@ -649,6 +678,8 @@ class SanityTest(BaseTest):
         time.sleep(3)
 
         dev_id = Api.get_deviceid_by_label(jwt, "Pluviometro")
+        self.logger.info("dispositivo Pluviometro tem o device id : " + dev_id )
+        self.logger.info("o atributo que vou recuperar : chuva ")
         rc, count = get_retriever_count_attr(self, jwt, dev_id, "chuva")
         self.logger.info("total de registros: " + str(count))
         self.assertTrue(count == 3, "** FAILED ASSERTION: received an unexpected count **")
@@ -656,24 +687,29 @@ class SanityTest(BaseTest):
         time.sleep(3)
 
         dev_id = Api.get_deviceid_by_label(jwt, "SensorNivel")
+        self.logger.info("dispositivo SensorNivel tem o device id : " + dev_id )
+        self.logger.info("o atributo que vou recuperar : nivel ")
         rc, count = get_retriever_count_attr(self, jwt, dev_id, "nivel")
-        self.assertTrue(count == 3, "** FAILED ASSERTION: received an unexpected count **")
+        self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
         self.logger.info("total de registros: " + str(count))
 
         time.sleep(3)
 
         dev_id = Api.get_deviceid_by_label(jwt, "linha_2")
+        self.logger.info("dispositivo linha_2 tem o device id : " + dev_id )
+        self.logger.info("o atributo que vou recuperar : velocidade ")
         rc, count = get_retriever_count_attr(self, jwt, dev_id, "velocidade")
         self.logger.info("total de registros: " + str(count))
         self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
 
         time.sleep(3)
-        
-    
+
+
         # create device linha_4
         self.logger.info('Criação do device linha_4...')
-        rc, res = Api.create_device(jwt, [template_ids[5]], "linha_4")
+        rc, res = Api.create_device(jwt, [template_ids[15]], "linha_4")
         self.logger.info('Result: ' + str(res))
+        self.logger.info(rc)
         self.assertTrue(int(rc) == 200, "codigo inesperado")
 
         time.sleep(3)
@@ -681,7 +717,7 @@ class SanityTest(BaseTest):
         # update device linha_4
         dev_id = Api.get_deviceid_by_label(jwt, "linha_4")
         self.logger.info('Atualização do device linha_4...' + str(dev_id))
-        data = {"templates": [template_ids[5]], "label": "update_linha_4"}
+        data = {"templates": [template_ids[15]],"disabled": False, "label": "update_linha_4"}
         rc, res = Api.update_device(jwt, str(dev_id), json.dumps(data))
         self.logger.info('Result: ' + str(res))
         self.assertTrue(int(rc) == 200, "codigo inesperado")
@@ -694,24 +730,24 @@ class SanityTest(BaseTest):
         self.assertTrue(int(rc) == 200, "codigo inesperado")
 
 
-        self.logger.info('http-agent test...')
+        # self.logger.info('http-agent test...')
 
-        device_id, _ = create_a_device_and_its_certificate(self, jwt)
+        # device_id, _ = create_a_device_and_its_certificate(self, jwt)
 
-        dev1 = HTTPSClient(device_id)
+        # dev1 = HTTPSClient(device_id)
 
-        payload = {"temperature": 90}
-        rc, res = dev1.publish(payload)
-        self.assertTrue(rc == 204,
-                        "** FAILED ASSERTION: Unexpected result code value: " + str(rc) + ". Body: " + str(res))
-        # waiting to process
-        self.logger.info('Esperando o dado ser armazenado no influxdb')
-        time.sleep(10)
+        # payload = {"temperature": 90}
+        # rc, res = dev1.publish(payload)
+        # self.assertTrue(rc == 204,
+        #                 "** FAILED ASSERTION: Unexpected result code value: " + str(rc) + ". Body: " + str(res))
+        # # waiting to process
+        # self.logger.info('Esperando o dado ser armazenado no influxdb')
+        # time.sleep(10)
 
-        self.logger.info('Checando se o dado foi publicado')
-        rc, count = get_retriever_count_attr(self, jwt, device_id, "temperature")
-        self.logger.info("total de registros: " + str(count) + ", " + str(device_id))
-        self.assertTrue(count == 1, "** FAILED ASSERTION: Unexpected count value")
+        # self.logger.info('Checando se o dado foi publicado')
+        # rc, count = get_retriever_count_attr(self, jwt, device_id, "temperature")
+        # self.logger.info("total de registros: " + str(count) + ", " + str(device_id))
+        # self.assertTrue(count == 1, "** FAILED ASSERTION: Unexpected count value")
 
         #File Mgmt
 

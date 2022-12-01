@@ -4,7 +4,7 @@ import os
 
 CONFIG = {
     'app': {
-        'tenant': os.environ.get("TENANT", "automacao"),
+        'tenant': os.environ.get("TENANT", "tenant38"),
         'passwd_keycloak': os.environ.get("PASSWD_KEYCLOAK", "master"),
         'user_keycloak': os.environ.get("USER_KEYCLOAK", "master"),    
     },
@@ -36,9 +36,14 @@ CONFIG = {
 
     'http': {
         'host': os.environ.get("DOJOT_HOST", "localhost"),
-        'url': os.environ.get("DOJOT_HTTP_URL", "http://localhost"),
-        'port': int(os.environ.get("DOJOT_HTTP_PORT", 3001)),
+        'port': int(os.environ.get("DOJOT_PORT", 8080)),
         'con_timeout': int(os.environ.get("DOJOT_TIMEOUT", 120)),
+    },
+    
+    'http-basic': {
+        'host': os.environ.get("DOJOT_HOST", "localhost"),
+        'url': os.environ.get("DOJOT_HTTP_URL", "http://localhost"),
+        'port': int(os.environ.get("DOJOT_HTTP_PORT", 3000)),
     },
 
     'dojot': {

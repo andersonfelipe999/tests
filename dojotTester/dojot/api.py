@@ -191,34 +191,33 @@ class DojotAPI:
         """
 
         # #Get token tenant master
-        Api = DojotAPI()
-        token = Api.get_token_tenent_master()
+        token = DojotAPI.get_token_tenent_master()
 
         #Check if the tenant has already been created
-        res = Api.check_tenant_exists(token)
+        res = DojotAPI.check_tenant_exists(token)
 
         #Created realm, if was not created
         if 'id' not in res:
             #Create Tenant
-            Api.create_tenant(token)
+            DojotAPI.create_tenant(token)
 
             #Updated new token 
-            token =Api.get_token_tenent_master()
+            token =DojotAPI.get_token_tenent_master()
 
             #Get user id
-            admin_user = Api.get_user_id(token)
+            admin_user = DojotAPI.get_user_id(token)
 
             #Set password of user admin of new tenant 
-            Api.set_password_by_user_id(token,admin_user)
+            DojotAPI.set_password_by_user_id(token,admin_user)
 
             #Get client id of parameter "dev-test-cli"
-            client_id = Api.get_client_id(token,'dev-test-cli')
+            client_id = DojotAPI.get_client_id(token,'dev-test-cli')
 
             #Enabled parameter "dev-test-cli"
-            Api.enable_parameter_by_client_id(token,client_id)
+            DojotAPI.enable_parameter_by_client_id(token,client_id)
 
         #Logging with new tenant created
-        newToken = Api.login_new_tenant()
+        newToken = DojotAPI.login_new_tenant()
 
         return newToken
     
@@ -694,6 +693,7 @@ class DojotAPI:
         if data is None:
             args["data"] = json.dumps({
                 "templates": template_id,
+                "disabled": False,
                 "attrs": {},
                 "label": label,
             })

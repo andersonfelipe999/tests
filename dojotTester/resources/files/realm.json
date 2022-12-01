@@ -1,5 +1,5 @@
 {
-   "realm":"automacao",
+   "realm":"tenant38",
    "notBefore":0,
    "enabled":true,
    "sslRequired":"all",
