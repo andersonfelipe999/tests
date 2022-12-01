@@ -650,7 +650,7 @@ class DojotAPI:
 
     @staticmethod
     def create_device(jwt: str, template_id: str or list = None, label: str = None, data: str = None, count: int = None,
-                      verbose: bool = None) -> tuple:
+                      verbose: bool = None, disabled :bool = None) -> tuple:
         """
         Create a device in Dojot.
 
@@ -693,7 +693,7 @@ class DojotAPI:
         if data is None:
             args["data"] = json.dumps({
                 "templates": template_id,
-                "disabled": False,
+                "disabled": disabled,
                 "attrs": {},
                 "label": label,
             })
