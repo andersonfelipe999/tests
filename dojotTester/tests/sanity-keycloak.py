@@ -39,8 +39,6 @@ class SanityTest(BaseTest):
         template_ids = []
         for template in templates:
             rc, template_id = Api.create_template(jwt, json.dumps(template))
-            self.logger.info(rc)
-            self.logger.info(template_id)
             template_ids.append(template_id["template"]["id"]) if rc == 200 else template_ids.append(None)
 
             
@@ -583,7 +581,7 @@ class SanityTest(BaseTest):
 
         rc, res = Api.create_cron_job(jwt, str(dev_id), json.dumps(data))
         self.logger.info('Result: ' + str(res))
-        self.logger.info(rc)
+        self.logger.info(str(rc))
         self.assertTrue(int(rc) == 201, "codigo inesperado")
 
         #CHECANDO OS AGENDAMENTOS DO CRON
@@ -598,7 +596,7 @@ class SanityTest(BaseTest):
         self.logger.info('Removendo os agendamentos')
         rc, res = Api.remove_cron_jobs(jwt)
         self.logger.info("Result: " + str(res))
-        self.logger.info(rc)
+        self.logger.info(str(rc))
         self.assertTrue(rc == 204, "** FAILED ASSERTION: Unexpected count value")
 
         #RETRIVER
@@ -710,7 +708,7 @@ class SanityTest(BaseTest):
         self.logger.info('Criação do device linha_4...')
         rc, res = Api.create_device(jwt, [template_ids[15]], "linha_4",disabled=False)
         self.logger.info('Result: ' + str(res))
-        self.logger.info(rc)
+        self.logger.info(str(rc))
         self.assertTrue(int(rc) == 200, "codigo inesperado")
 
         time.sleep(3)
@@ -731,24 +729,24 @@ class SanityTest(BaseTest):
         self.assertTrue(int(rc) == 200, "codigo inesperado")
 
 
-        self.logger.info('http-agent test...')
+        # self.logger.info('http-agent test...')
 
-        device_id, _ = create_a_device_and_its_certificate(self, jwt)
+        # device_id, _ = create_a_device_and_its_certificate(self, jwt)
 
-        dev1 = HTTPSClient(device_id)
+        # dev1 = HTTPSClient(device_id)
 
-        payload = {"temperature": 90}
-        rc, res = dev1.publish(payload)
-        self.assertTrue(rc == 204,
-                        "** FAILED ASSERTION: Unexpected result code value: " + str(rc) + ". Body: " + str(res))
-        # waiting to process
-        self.logger.info('Esperando o dado ser armazenado no influxdb')
-        time.sleep(10)
+        # payload = {"temperature": 90}
+        # rc, res = dev1.publish(payload)
+        # self.assertTrue(rc == 204,
+        #                 "** FAILED ASSERTION: Unexpected result code value: " + str(rc) + ". Body: " + str(res))
+        # # waiting to process
+        # self.logger.info('Esperando o dado ser armazenado no influxdb')
+        # time.sleep(10)
 
-        self.logger.info('Checando se o dado foi publicado')
-        rc, count = get_retriever_count_attr(self, jwt, device_id, "temperature")
-        self.logger.info("total de registros: " + str(count) + ", " + str(device_id))
-        self.assertTrue(count == 1, "** FAILED ASSERTION: Unexpected count value")
+        # self.logger.info('Checando se o dado foi publicado')
+        # rc, count = get_retriever_count_attr(self, jwt, device_id, "temperature")
+        # self.logger.info("total de registros: " + str(count) + ", " + str(device_id))
+        # self.assertTrue(count == 1, "** FAILED ASSERTION: Unexpected count value")
 
         #File Mgmt
 
