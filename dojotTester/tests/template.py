@@ -1,6 +1,7 @@
 from common.base_test import BaseTest
 from dojot.api import DojotAPI as Api
 import json
+import time
 
 
 class TemplateTest(BaseTest):
@@ -27,9 +28,9 @@ class TemplateTest(BaseTest):
     def createDevices(self, jwt: str, devices: list):
         device_ids = []
 
-        for templates, label in devices:
-            self.logger.info('adding device ' + label + ' using templates ' + str(templates))
-            rc, device_id = Api.create_device(jwt, templates, label)
+        for templates, label, disabled in devices:
+            self.logger.info('cria device ' + label + ' usando templates ' + str(templates) + ' com status ' + str(disabled))
+            rc, device_id = Api.create_device(jwt, templates, label, disabled)
             self.assertTrue(device_id is not None, "Error on create device")
             device_ids.append(device_id) if rc == 200 else device_ids.append(None)
 
@@ -81,6 +82,8 @@ class TemplateTest(BaseTest):
         self.logger.info('Executing template test')
         self.logger.debug('getting jwt...')
         jwt = Api.get_jwt()
+
+        time.sleep(30)
 
         self.logger.info('listing all templates - no data...')
         rc, res = self.getTemplates(jwt)
@@ -451,7 +454,7 @@ class TemplateTest(BaseTest):
         self.assertTrue(int(rc) == 200, "codigo inesperado")
 
         devices = []
-        devices.append(([template_ids[2]], "device"))
+        devices.append(([template_ids[2]], "device", False))
         devices_ids = self.createDevices(jwt, devices)
         self.logger.info("devices ids: " + str(devices_ids))
 

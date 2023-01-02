@@ -24,11 +24,11 @@ class DojotAPI:
     Utility class with API calls to Dojot.
     """
     @staticmethod
-    def get_token_tenent_master() -> str:
+    def get_token_tenant_master() -> str:
         """
         Request a JWT token.
         """
-        LOGGER.debug("Retrieving JWT...")
+        LOGGER.debug("Retrieving token tenant master...")
 
         #Get token tenant master
         args = {
@@ -60,14 +60,15 @@ class DojotAPI:
         
         LOGGER.debug("Create Tenant...")
 
+
         headers = {
-                'Authorization': "Bearer "+ token,
-                'Content-Type': 'application/json',
-            }
+            "Authorization": "Bearer {0}".format(token),
+            'Content-Type': 'application/json',
+        }
         with open('resources/files/realm.json') as f:
             data = f.read().replace('\n', '')
         requests.post("{0}/auth/admin/realms".format(CONFIG['dojot']['url']), headers=headers, data=data)
-        
+
 
     @staticmethod
     def login_new_tenant():
@@ -90,6 +91,7 @@ class DojotAPI:
         }
 
         rc, res = DojotAPI.call_api(requests.post, args)
+        LOGGER.debug('Result:' + str(rc) + ', ' + str(res))
         LOGGER.info('TOKEN OF TENANT:')
         LOGGER.info(res["access_token"])
 
@@ -101,26 +103,26 @@ class DojotAPI:
         args = {
                 "url": "{0}/auth/admin/realms/{1}/users".format(CONFIG['dojot']['url'],CONFIG['app']['tenant']),
                 "headers": {
-                    'Authorization': "Bearer " + token,
+                    "Authorization": "Bearer {0}".format(token),
                     'Content-type': 'application/json;charset=UTF-8',
                     'Accept': 'application/json',
                 },
             }        
 
         rc, res = DojotAPI.call_api(requests.get, args)
-        LOGGER.debug(".. retrieved JWT. Result code: " + str(rc))
+        LOGGER.debug("Obtem o user id. Result: " + str(rc) + ", " + str(res))
             
         admin_user = res[0]['id']
         
         return admin_user
 
     @staticmethod
-    def get_client_id(token: str,parameter: str):
+    def get_client_id(token: str, parameter: str):
 
         args = {
                 "url": "{0}/auth/admin/realms/{1}/clients".format(CONFIG['dojot']['url'],CONFIG['app']['tenant']),
                 "headers": {
-                    'Authorization': "Bearer " + token,
+                    "Authorization": "Bearer {0}".format(token),
                     'Accept': 'application/json',
                 },
                 "params": {
@@ -129,25 +131,28 @@ class DojotAPI:
             }        
 
         rc, res = DojotAPI.call_api(requests.get, args)
+        LOGGER.debug("Obtem o client id. Result: " + str(rc) + ", " + str(res))
             
         client_id = res[0]['id']
         
         return client_id
     
     @staticmethod
-    def enable_parameter_by_client_id(token: str,client_id: str):
+    def enable_parameter_by_client_id(token: str, client_id: str):
 
         args = {
-                "url": "{0}/auth/admin/realms/{1}/clients/{2}".format(CONFIG['dojot']['url'],CONFIG['app']['tenant'],client_id),
+                "url": "{0}/auth/admin/realms/{1}/clients/{2}".format(CONFIG['dojot']['url'],CONFIG['app']['tenant'], client_id),
                 "headers": {
-                    'Authorization': "Bearer " + token,
+                    "Authorization": "Bearer {0}".format(token),
                 },
                 "json": {
                     'enabled': True,
                 },
-            }  
+            }
+        #LOGGER.debug("args do Habilita client id: " + str(args))
 
         rc, res = DojotAPI.call_api(requests.put, args)
+        LOGGER.debug("Habilita client id. Result: " + str(rc))
     
 
     @staticmethod
@@ -155,7 +160,7 @@ class DojotAPI:
         args = {
                 "url": "{0}/auth/admin/realms/{1}/users/{2}/reset-password".format(CONFIG['dojot']['url'],CONFIG['app']['tenant'],user_id),
                 "headers": {
-                    'Authorization': "Bearer " + token,
+                    "Authorization": "Bearer {0}".format(token),
                     'Content-type': 'application/json;charset=UTF-8',
                     'Accept': 'application/json',
                 },
@@ -167,19 +172,22 @@ class DojotAPI:
             }        
 
         rc, res = DojotAPI.call_api(requests.put, args)
+        LOGGER.debug("Cadastra as credenciais do usuário. Result: " + str(rc))
         
     @staticmethod
     def check_tenant_exists(token: str):
         args = {
             "url": "{0}/auth/admin/realms/{1}/users".format(CONFIG['dojot']['url'],CONFIG['app']['tenant']),
             "headers": {
-                'Authorization': "Bearer " + token,
+                "Authorization": "Bearer {0}".format(token),
                 'Content-type': 'application/json;charset=UTF-8',
                 'Accept': 'application/json',
             },
         }        
 
         rc, res = DojotAPI.call_api(requests.get, args)
+        LOGGER.debug("Verifica se o tenant já existe. Result: " + str(rc))
+
         res = json.dumps(res)
         
         return res
@@ -191,10 +199,11 @@ class DojotAPI:
         """
 
         # #Get token tenant master
-        token = DojotAPI.get_token_tenent_master()
+        token = DojotAPI.get_token_tenant_master()
 
         #Check if the tenant has already been created
         res = DojotAPI.check_tenant_exists(token)
+        LOGGER.debug("Result: " + str(res))
 
         #Created realm, if was not created
         if 'id' not in res:
@@ -202,19 +211,22 @@ class DojotAPI:
             DojotAPI.create_tenant(token)
 
             #Updated new token 
-            token =DojotAPI.get_token_tenent_master()
+            token =DojotAPI.get_token_tenant_master()
+            LOGGER.debug("token: " + str(token))
 
             #Get user id
             admin_user = DojotAPI.get_user_id(token)
+            LOGGER.debug("admin_user: " + str(admin_user))
 
             #Set password of user admin of new tenant 
-            DojotAPI.set_password_by_user_id(token,admin_user)
+            DojotAPI.set_password_by_user_id(token, admin_user)
 
             #Get client id of parameter "dev-test-cli"
-            client_id = DojotAPI.get_client_id(token,'dev-test-cli')
+            client_id = DojotAPI.get_client_id(token, 'dev-test-cli')
+            LOGGER.debug("client_id: " + str(client_id))
 
             #Enabled parameter "dev-test-cli"
-            DojotAPI.enable_parameter_by_client_id(token,client_id)
+            DojotAPI.enable_parameter_by_client_id(token, client_id)
 
         #Logging with new tenant created
         newToken = DojotAPI.login_new_tenant()
@@ -312,9 +324,8 @@ class DojotAPI:
 
         username = credentials["username"]
         password = credentials["password"]
-        
 
-	    #Get Device Authentication
+        #Get Device Authentication
 
         url= '{0}:{1}/basic-auth/v1/internal/authentication'.format(CONFIG['basic']['url'],CONFIG['basic']['port'])
         headers = {
@@ -371,7 +382,7 @@ class DojotAPI:
         password = credentials["password"]
         basicAuth = response["basicAuth"]
 
-	    #Get Device Authentication
+        #Get Device Authentication
 
         args = {
             "url": "{0}:{1}/basic-auth/v1/internal/authentication".format(CONFIG['basic']['url'],CONFIG['basic']['port']),
@@ -429,7 +440,7 @@ class DojotAPI:
         password = credentials["password"]
         basicAuth = response["basicAuth"]
 
-	    #Get Device Authentication
+        #Get Device Authentication
 
         args = {
             "url": "{0}:{1}/basic-auth/v1/internal/authentication".format(CONFIG['basic']['url'],CONFIG['basic']['port']),
@@ -487,7 +498,7 @@ class DojotAPI:
         password = credentials["password"]
         basicAuth = response["basicAuth"]
 
-	    #Get Device Authentication
+        #Get Device Authentication
 
         args = {
             "url": "{0}:{1}/basic-auth/v1/internal/authentication".format(CONFIG['basic']['url'],CONFIG['basic']['port']),
@@ -545,7 +556,7 @@ class DojotAPI:
         password = credentials["password"]
         basicAuth = response["basicAuth"]
 
-	    #Get Device Authentication
+        #Get Device Authentication
 
         args = {
             "url": "{0}:{1}/basic-auth/v1/internal/authentication".format(CONFIG['basic']['url'],CONFIG['basic']['port']),
@@ -649,8 +660,8 @@ class DojotAPI:
         return result_code, res
 
     @staticmethod
-    def create_device(jwt: str, template_id: str or list = None, label: str = None, data: str = None, count: int = None,
-                      verbose: bool = None, disabled :bool = None) -> tuple:
+    def create_device(jwt: str, template_id: str or list = None, label: str = None, disabled: bool = None, data: str = None, count: int = None,
+                      verbose: bool = None) -> tuple:
         """
         Create a device in Dojot.
 
@@ -658,6 +669,7 @@ class DojotAPI:
             jwt: JWT authorization.
             template_id: template to be used by the device.
             label: name for the device in Dojot.
+            disabled: indicates device status. If false, device is enable and receives telemetry data; if true, device is disabled and messages are discarded
             data: request body. if provided template_id and label is ignored.
             count: amount of devices registries
             verbose: Set to True if full device description is to be returned.
@@ -693,14 +705,136 @@ class DojotAPI:
         if data is None:
             args["data"] = json.dumps({
                 "templates": template_id,
-                "disabled": disabled,
                 "attrs": {},
                 "label": label,
+                "disabled": disabled
             })
         else:
             args["data"] = data
 
         LOGGER.debug("sending request...")
+
+        result_code, res = DojotAPI.call_api(requests.post, args)
+
+        LOGGER.debug("...done ")
+        return result_code, res
+
+    @staticmethod
+    def create_device(jwt: str, template_id: str or list = None, label: str = None, disabled: bool = None, data: str = None, count: int = None,
+                      verbose: bool = None) -> tuple:
+        """
+        Create a device in Dojot.
+
+        Parameters:
+            jwt: JWT authorization.
+            template_id: template to be used by the device.
+            label: name for the device in Dojot.
+            disabled: indicates device status. If false, device is enable and receives telemetry data; if true, device is disabled and messages are discarded
+            data: request body. if provided template_id and label is ignored.
+            count: amount of devices registries
+            verbose: Set to True if full device description is to be returned.
+
+        Returns the created device ID or a error message.
+        """
+        LOGGER.debug("Creating device...")
+        if data is None:
+            if template_id is None or label is None:
+                raise APICallError("ERROR: must either provide body field or template_id and label fields")
+
+        if not isinstance(template_id, list):
+            template_id = [template_id]
+
+        # setting url
+        url = "{0}/device".format(CONFIG['dojot']['url'])
+        if count is not None:
+            url = url + "?count=" + str(count)
+            if verbose is not None:
+                url = url + "&verbose=" + str(verbose)
+        else:
+            if verbose is not None:
+                url = url + "?verbose=" + str(verbose)
+
+        # setting args
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt),
+            },
+        }
+        if data is None:
+            args["data"] = json.dumps({
+                "templates": template_id,
+                "attrs": {},
+                "label": label,
+                "disabled": disabled
+            })
+        else:
+            args["data"] = data
+
+        LOGGER.debug("sending request...")
+
+        result_code, res = DojotAPI.call_api(requests.post, args)
+
+        LOGGER.debug("...done ")
+        return result_code, res
+
+    @staticmethod
+    def create_device_entered_id(jwt: str, template_id: str or list = None, label: str = None, disabled: bool = None, device_id: str = None, data: str = None, count: int = None,
+                      verbose: bool = None) -> tuple:
+        """
+        Create a device in Dojot.
+
+        Parameters:
+            jwt: JWT authorization.
+            template_id: template to be used by the device.
+            label: name for the device in Dojot.
+            disabled: indicates device status. If false, device is enable and receives telemetry data; if true, device is disabled and messages are discarded
+            data: request body. if provided template_id and label is ignored.
+            count: amount of devices registries
+            verbose: Set to True if full device description is to be returned.
+
+        Returns the created device ID or a error message.
+        """
+        LOGGER.debug("Creating device entered id...")
+        if data is None:
+            if template_id is None or label is None:
+                raise APICallError("ERROR: must either provide body field or template_id and label fields")
+
+        if not isinstance(template_id, list):
+            template_id = [template_id]
+
+        # setting url
+        url = "{0}/device".format(CONFIG['dojot']['url'])
+        if count is not None:
+            url = url + "?count=" + str(count)
+            if verbose is not None:
+                url = url + "&verbose=" + str(verbose)
+        else:
+            if verbose is not None:
+                url = url + "?verbose=" + str(verbose)
+
+        # setting args
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt),
+            },
+        }
+        if data is None:
+            args["data"] = json.dumps({
+                "templates": template_id,
+                "attrs": {},
+                "label": label,
+                "disabled": disabled,
+                "id": device_id
+            })
+        else:
+            args["data"] = data
+
+        LOGGER.debug("sending request...")
+
         result_code, res = DojotAPI.call_api(requests.post, args)
 
         LOGGER.debug("...done ")
@@ -836,8 +970,8 @@ class DojotAPI:
             "url": "{0}/device?idsOnly=true&label={1}".format(CONFIG['dojot']['url'], label),
             "headers": {
                 "Content-Type": "application/json",
-                "Authorization": "Bearer {0}".format(jwt),
-            },
+                "Authorization": "Bearer {0}".format(jwt)
+            }
         }
 
         rc, res = DojotAPI.call_api(requests.get, args)
@@ -1081,7 +1215,7 @@ class DojotAPI:
         return rc, res
 
     @staticmethod
-    def create_devices_with_parameters(jwt: str, template_id: str or list, label: str, attrs: str) -> tuple:
+    def create_devices_with_parameters(jwt: str, template_id: str or list, label: str, disabled: bool, attrs: str) -> tuple:
         """
         Create a device in Dojot.
 
@@ -1108,6 +1242,7 @@ class DojotAPI:
                 "templates": template_id,
                 "attrs": {},
                 "label": label,
+                "disabled": disabled
             }),
         }
 
