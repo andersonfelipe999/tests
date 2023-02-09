@@ -28,7 +28,7 @@ CONFIG = {
         'qos': int(os.environ.get("DOJOT_MQTT_QOS", 0)),
     },
     
-    'device-maneger': {
+    'device-manager': {
         'host': os.environ.get("DOJOT_MQTT_HOST", "localhost"),
         'url': os.environ.get("DOJOT_DEVICE_URL", "http://device-manager-sidecar"),
         'port': int(os.environ.get("DOJOT_DEVICE_PORT", 5000)),
@@ -57,6 +57,6 @@ CONFIG = {
         }
     },
     'log': {
-        'level': os.environ.get("LOG_LEVEL", "debug")
+        'level': os.environ.get("LOG_LEVEL", "info")
     }
 }

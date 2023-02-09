@@ -58,7 +58,7 @@ class DojotAPI:
     @staticmethod
     def create_tenant(token: str):
         
-        LOGGER.debug("Create Tenant...")
+        LOGGER.info("Create Tenant...")
 
 
         headers = {
@@ -68,7 +68,7 @@ class DojotAPI:
         with open('resources/files/realm.json') as f:
             data = f.read().replace('\n', '')
         requests.post("{0}/auth/admin/realms".format(CONFIG['dojot']['url']), headers=headers, data=data)
-
+        
 
     @staticmethod
     def login_new_tenant():
@@ -92,8 +92,8 @@ class DojotAPI:
 
         rc, res = DojotAPI.call_api(requests.post, args)
         LOGGER.debug('Result:' + str(rc) + ', ' + str(res))
-        LOGGER.info('TOKEN OF TENANT:')
-        LOGGER.info(res["access_token"])
+        LOGGER.debug('TOKEN OF TENANT:')
+        LOGGER.debug(res["access_token"])
 
         return res["access_token"]
 
@@ -132,7 +132,7 @@ class DojotAPI:
 
         rc, res = DojotAPI.call_api(requests.get, args)
         LOGGER.debug("Obtem o client id. Result: " + str(rc) + ", " + str(res))
-            
+
         client_id = res[0]['id']
         
         return client_id
@@ -148,12 +148,11 @@ class DojotAPI:
                 "json": {
                     'enabled': True,
                 },
-            }
-        #LOGGER.debug("args do Habilita client id: " + str(args))
+            }  
 
         rc, res = DojotAPI.call_api(requests.put, args)
         LOGGER.debug("Habilita client id. Result: " + str(rc))
-    
+
 
     @staticmethod
     def set_password_by_user_id(token: str,user_id: str):
@@ -173,7 +172,7 @@ class DojotAPI:
 
         rc, res = DojotAPI.call_api(requests.put, args)
         LOGGER.debug("Cadastra as credenciais do usuário. Result: " + str(rc))
-        
+
     @staticmethod
     def check_tenant_exists(token: str):
         args = {
@@ -186,7 +185,7 @@ class DojotAPI:
         }        
 
         rc, res = DojotAPI.call_api(requests.get, args)
-        LOGGER.debug("Verifica se o tenant já existe. Result: " + str(rc))
+        LOGGER.info("Verifica se o tenant já existe. Result: " + str(rc))
 
         res = json.dumps(res)
         
@@ -720,66 +719,6 @@ class DojotAPI:
         return result_code, res
 
     @staticmethod
-    def create_device(jwt: str, template_id: str or list = None, label: str = None, disabled: bool = None, data: str = None, count: int = None,
-                      verbose: bool = None) -> tuple:
-        """
-        Create a device in Dojot.
-
-        Parameters:
-            jwt: JWT authorization.
-            template_id: template to be used by the device.
-            label: name for the device in Dojot.
-            disabled: indicates device status. If false, device is enable and receives telemetry data; if true, device is disabled and messages are discarded
-            data: request body. if provided template_id and label is ignored.
-            count: amount of devices registries
-            verbose: Set to True if full device description is to be returned.
-
-        Returns the created device ID or a error message.
-        """
-        LOGGER.debug("Creating device...")
-        if data is None:
-            if template_id is None or label is None:
-                raise APICallError("ERROR: must either provide body field or template_id and label fields")
-
-        if not isinstance(template_id, list):
-            template_id = [template_id]
-
-        # setting url
-        url = "{0}/device".format(CONFIG['dojot']['url'])
-        if count is not None:
-            url = url + "?count=" + str(count)
-            if verbose is not None:
-                url = url + "&verbose=" + str(verbose)
-        else:
-            if verbose is not None:
-                url = url + "?verbose=" + str(verbose)
-
-        # setting args
-        args = {
-            "url": url,
-            "headers": {
-                "Content-Type": "application/json",
-                "Authorization": "Bearer {0}".format(jwt),
-            },
-        }
-        if data is None:
-            args["data"] = json.dumps({
-                "templates": template_id,
-                "attrs": {},
-                "label": label,
-                "disabled": disabled
-            })
-        else:
-            args["data"] = data
-
-        LOGGER.debug("sending request...")
-
-        result_code, res = DojotAPI.call_api(requests.post, args)
-
-        LOGGER.debug("...done ")
-        return result_code, res
-
-    @staticmethod
     def create_device_entered_id(jwt: str, template_id: str or list = None, label: str = None, disabled: bool = None, device_id: str = None, data: str = None, count: int = None,
                       verbose: bool = None) -> tuple:
         """
@@ -867,6 +806,26 @@ class DojotAPI:
 
         LOGGER.debug("... flow created")
         return result_code, res
+
+
+    @staticmethod
+    def delete_flows(jwt: str) -> tuple:
+        """
+        Delete all flows.
+        """
+        LOGGER.debug("Deleting flows...")
+
+        args = {
+            "url": "{0}/flows/v1/flow".format(CONFIG['dojot']['url']),
+            "headers": {
+                "Authorization": "Bearer {0}".format(jwt),
+            }
+        }
+
+        rc, res = DojotAPI.call_api(requests.delete, args)
+
+        LOGGER.debug("... deleted all flows")
+        return rc, res
 
     @staticmethod
     def create_group(jwt: str, group: str) -> tuple:
@@ -2160,6 +2119,51 @@ class DojotAPI:
 
         # /tss/v1/devices/{device_id}/attrs/{attr}/data?limit={limit}&order={order}&dateFrom={dateFrom}&dateTo={dateTo}
         url = "{0}/tss/v1/devices/{1}/attrs/{2}/data?".format(CONFIG['dojot']['url'], device_id, attr)
+
+        if limit is not None:
+            url = url + "limit=" + str(limit) + "&"
+
+        if order is not None:
+            url = url + "order=" + str(order) + "&"
+
+        if datefrom is not None:
+            url = url + "dateFrom=" + datefrom + "&"
+
+        if dateto is not None:
+            url = url + "dateTo=" + dateto + "&"
+
+        args = {
+            "url": url,
+            "headers": {
+                "Content-Type": "application/json",
+                "Authorization": "Bearer {0}".format(jwt),
+            }
+        }
+
+        rc, res = DojotAPI.call_api(requests.get, args)
+
+        LOGGER.debug("... retrieved data")
+
+        return rc, res
+
+    @staticmethod
+    def get_retriever_device(jwt: str, device_id: str, datefrom: str = None, dateto: str = None,
+                                  limit: int = None, order: str = None) -> tuple:
+        """
+        Retrieves device attribute data stored in influxbd
+
+        Parameters:
+            jwt: Dojot JWT token
+            device_id: Dojot device id
+            datefrom: Start time of a time-based query
+            dateto: End time of a time-based query
+            limit: Number of the most current values. If order = asc, it is the number of oldest values. You can use limit with or without dateFrom/dateTo.
+
+            """
+        LOGGER.debug("Retrieving data stored in influxbd ...")
+
+        # /tss/v1/devices/{device_id}/attrs/{attr}/data?limit={limit}&order={order}&dateFrom={dateFrom}&dateTo={dateTo}
+        url = "{0}/tss/v1/devices/{1}/data?".format(CONFIG['dojot']['url'], device_id)
 
         if limit is not None:
             url = url + "limit=" + str(limit) + "&"

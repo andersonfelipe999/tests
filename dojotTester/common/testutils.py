@@ -142,6 +142,18 @@ def get_retriever_count_attr(self, jwt: str, dev_id: str, attr: str) -> tuple:
 
     return rc, len(response)
 
+def get_retriever_count_elements(self, jwt: str, dev_id: str) -> tuple:
+    rc, res = Api.get_retriever_device(jwt, dev_id)
+    self.logger.info("Retrieving data: " + str(res))
+
+    # return empty if no data
+    response = res["data"]
+
+    self.logger.info("response: " + str(response))
+    self.assertTrue(rc == 200, "** FAILED ASSERTION: failure to get history from device" + dev_id + " **")
+
+    return rc, len(response)
+
 def get_retriever_last_attr(self, jwt: str, dev_id: str, attr: str) -> tuple:
     rc, res = Api.get_retriever_device_attr(jwt, dev_id, attr, limit=1)
     self.logger.info("Retrieving data: " + str(res))
