@@ -11,11 +11,11 @@ import re
 dojot_ca_chain_file = ROOT_DIR + "/" + CONFIG['security']['cert_dir'] + "/" + "root_ca.crt"
 
 
-def add_a_simple_device(self, jwt: str, template=None, label="SimpleDevice"):
+def add_a_simple_device(self, jwt: str, template=None, label="SimpleDevice", disabled=False):
     if template is None:
         template = add_a_simple_template(self, jwt)
 
-    rc, res = Api.create_device(jwt, template, label)
+    rc, res = Api.create_device(jwt, template, label, disabled)
     self.assertTrue(rc == 200, f"** FAILED ASSERTION: failure to add device {label}**")
 
     return res["devices"][0]["id"]
@@ -132,6 +132,7 @@ def get_count_profiles(self, jwt: str) -> tuple:
 
 def get_retriever_count_attr(self, jwt: str, dev_id: str, attr: str) -> tuple:
     rc, res = Api.get_retriever_device_attr(jwt, dev_id, attr)
+    self.logger.info("Retrieving data: " + str(res))
 
     # return empty if no data for the given attribute
     response = res["data"]
@@ -140,6 +141,30 @@ def get_retriever_count_attr(self, jwt: str, dev_id: str, attr: str) -> tuple:
     self.assertTrue(rc == 200, "** FAILED ASSERTION: failure to get history from device" + dev_id + " **")
 
     return rc, len(response)
+
+def get_retriever_count_elements(self, jwt: str, dev_id: str) -> tuple:
+    rc, res = Api.get_retriever_device(jwt, dev_id)
+    self.logger.info("Retrieving data: " + str(res))
+
+    # return empty if no data
+    response = res["data"]
+
+    self.logger.info("response: " + str(response))
+    self.assertTrue(rc == 200, "** FAILED ASSERTION: failure to get history from device" + dev_id + " **")
+
+    return rc, len(response)
+
+def get_retriever_last_attr(self, jwt: str, dev_id: str, attr: str) -> tuple:
+    rc, res = Api.get_retriever_device_attr(jwt, dev_id, attr, limit=1)
+    self.logger.info("Retrieving data: " + str(res))
+
+    # return empty if no data for the given attribute
+    response = res["data"]
+
+    self.logger.info("response: " + str(response))
+    self.assertTrue(rc == 200, "** FAILED ASSERTION: failure to get history from device" + dev_id + " **")
+
+    return rc, response
 
 def create_a_device_and_its_certificate(self, jwt: str):
 
@@ -152,7 +177,8 @@ def create_a_device_and_its_certificate(self, jwt: str):
     # dns = ["dns.com.br"]
     dns = []
     ip = []
-    cname = "admin:" + device_id
+    cname = CONFIG['app']['tenant'] + ":" + device_id
+    self.logger.info("cname is: " + cname)
     # generateCSR(device_id, cname, True, dns, ip)
     fingerprint = ask_cert_sign(jwt, device_id, cname, dns, ip)
     Api.associate_certificate(jwt, fingerprint, device_id)

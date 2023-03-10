@@ -4,7 +4,9 @@ import os
 
 CONFIG = {
     'app': {
-        'tenant': os.environ.get("TENANT", "admin"),
+        'tenant': os.environ.get("TENANT", "automacao"),
+        'passwd_keycloak': os.environ.get("PASSWD_KEYCLOAK", "master"),
+        'user_keycloak': os.environ.get("USER_KEYCLOAK", "master"),    
     },
 
     'security': {
@@ -14,11 +16,22 @@ CONFIG = {
         'ca_cert_file': os.environ.get("CA_CERT_FILE", "ca.crt"),
     },
 
+    'basic': {
+        'url': os.environ.get("BASIC_URL", "http://localhost"),
+        'port': int(os.environ.get("DOJOT_BASIC_PORT", 3002)),
+    },
+
     'mqtt': {
         'host': os.environ.get("DOJOT_MQTT_HOST", "localhost"),
         'port': int(os.environ.get("DOJOT_MQTT_PORT", 1883)),
         'con_timeout': int(os.environ.get("DOJOT_MQTT_TIMEOUT", 120)),
         'qos': int(os.environ.get("DOJOT_MQTT_QOS", 0)),
+    },
+    
+    'device-manager': {
+        'host': os.environ.get("DOJOT_MQTT_HOST", "localhost"),
+        'url': os.environ.get("DOJOT_DEVICE_URL", "http://device-manager-sidecar"),
+        'port': int(os.environ.get("DOJOT_DEVICE_PORT", 5000)),
     },
 
     'http': {
@@ -26,11 +39,17 @@ CONFIG = {
         'port': int(os.environ.get("DOJOT_PORT", 8080)),
         'con_timeout': int(os.environ.get("DOJOT_TIMEOUT", 120)),
     },
+    
+    'http-basic': {
+        'host': os.environ.get("DOJOT_HOST", "localhost"),
+        'url': os.environ.get("DOJOT_HTTP_URL", "http://localhost"),
+        'port': int(os.environ.get("DOJOT_HTTP_PORT", 3000)),
+    },
 
     'dojot': {
         'url': os.environ.get("DOJOT_URL", "http://localhost:8000"),
         'user': os.environ.get("DOJOT_USER", "admin"),
-        'passwd': os.environ.get("DOJOT_PASSWD", "admin"),
+        'passwd': os.environ.get("DOJOT_PASSWD", "Dojot2022*"),
         'api': {
             'retries': int(os.environ.get("DOJOT_API_RETRIES", 3)),
             'time': float(os.environ.get("DOJOT_API_RETRY_TIME", 5000.0)) / 1000.0,

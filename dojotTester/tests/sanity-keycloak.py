@@ -1,9 +1,12 @@
+from pickletools import string1
 from dojot.api import DojotAPI as Api
 from mqtt.mqttClient import MQTTClient
 import json
 import random
 import datetime
 import time
+import requests
+from config import CONFIG
 
 from dojotTester import ROOT_DIR
 
@@ -36,19 +39,19 @@ class SanityTest(BaseTest):
         template_ids = []
         for template in templates:
             rc, template_id = Api.create_template(jwt, json.dumps(template))
-
             template_ids.append(template_id["template"]["id"]) if rc == 200 else template_ids.append(None)
+
         return template_ids
 
     def createDevices(self, jwt: str, devices: list):
         device_ids = []
 
-        for templates, label in devices:
-            self.logger.info('adding device ' + label + ' using templates ' + str(templates))
-            rc, device_id = Api.create_device(jwt, templates, label)
+        for templates, label, disabled in devices:
+            self.logger.info('adiciona device ' + label + ' usando templates ' + str(templates) + ' e disabled ' + str(disabled))
+            rc, device_id = Api.create_device(jwt, templates, label, disabled)
             self.assertTrue(device_id is not None, "Error on create device")
             device_ids.append(device_id) if rc == 200 else device_ids.append(None)
-
+            time.sleep(10)
         return device_ids
 
     def createFlows(self, jwt: str, flows: list):
@@ -62,42 +65,19 @@ class SanityTest(BaseTest):
 
         return flows_ids
 
-    def createUsers(self, jwt: str, user: str):
 
-        Api.create_user(jwt, user)
-
-    def createRemoteNode(self, jwt: str, node: dict):
-
-        self.logger.info('adding remote node..')
-        rc, res = Api.create_remote_node(jwt, node)
-        #self.assertTrue(int(rc) == 200, "Error on create remote node")
-        return rc, res
-
-    def importData(self, jwt: str):
-
-        data = {"devices":[],
-                "templates":[],
-                "flowRemoteNodes":[],
-                "flows":[],
-                "cronJobs":[]}
-        rc, res = Api.import_data(jwt, json.dumps(data))
-        return rc, res
 
     def runTest(self):
-        self.logger.info('Executing sanity test')
-        self.logger.debug('getting jwt...')
+        self.logger.info('Sanity test')
+            
+        self.logger.info('Obtenção do token...')
         jwt = Api.get_jwt()
 
-        self.logger.debug('importing empty database ...')
-        rc, res = self.importData(jwt)
-        self.assertTrue(int(rc) == 201, "codigo inesperado")
-
-
-        self.logger.info('waiting...')
-        time.sleep(10)
+        self.logger.info('Aguardando 30s para propagação do evento de criação de tenant pelo keycloak...')
+        time.sleep(30)
 
         templates = []
-        self.logger.info('creating templates...')
+        self.logger.info('Criação dos templates...')
         templates.append({
             "label": "medidor de temperatura",
             "attrs": [
@@ -379,37 +359,49 @@ class SanityTest(BaseTest):
                 {"label": "timestamp", "type": "dynamic", "value_type": "integer"}
             ]
         })
+        templates.append({
+            "label": "basic_template",
+            "attrs": [
+                {"label": "first_attribute", "type": "dynamic", "value_type": "float"},
+                {"label": "second_attribute", "type": "dynamic", "value_type": "integer"}
+            ]
+        })
+
+
+        self.logger.debug("Templates: " + str(templates))
 
         template_ids = self.createTemplates(jwt, templates)
-        self.logger.info("Templates created. IDs: " + str(template_ids))
+        self.logger.info("Templates criados. IDs: " + str(template_ids))
 
         devices = []
-        self.logger.info('creating devices...')
-        devices.append(([template_ids[0], template_ids[4]], "termometro Celsius"))
-        devices.append(([template_ids[0], template_ids[4]], "termometro Kelvin"))
-        devices.append(([template_ids[1], template_ids[4]], "barometro"))
-        devices.append(([template_ids[2], template_ids[4]], "higrometro"))
-        devices.append(([template_ids[3], template_ids[4]], "anemometro"))
-        devices.append(([template_ids[0], template_ids[1], template_ids[2], template_ids[3]], "instrumento de medicao"))
-        devices.append(([template_ids[5]], "linha_1"))
-        devices.append(([template_ids[5]], "linha_2"))
-        devices.append(([template_ids[5]], "linha_3"))
-        devices.append(([template_ids[6]], "controle"))
-        devices.append(([template_ids[7]], "device"))
-        devices.append(([template_ids[7]], "dispositivo"))
-        devices.append(([template_ids[8]], "Camera1"))
-        devices.append(([template_ids[9]], "Pluviometro"))
-        devices.append(([template_ids[10]], "SensorNivel"))
-        devices.append(([template_ids[11]], "logger"))
-        devices.append(([template_ids[12]], "acesso"))
-        devices.append(([template_ids[13]], "token"))
-        devices.append(([template_ids[14]], "CameraQualcomm"))
+        self.logger.info('Criação dos devices...')
+        devices.append(([template_ids[0], template_ids[4]], "termometro Celsius", False))
+        devices.append(([template_ids[0], template_ids[4]], "termometro Kelvin", False))
+        devices.append(([template_ids[1], template_ids[4]], "barometro", False))
+        devices.append(([template_ids[2], template_ids[4]], "higrometro", False))
+        devices.append(([template_ids[3], template_ids[4]], "anemometro", False))
+        devices.append(([template_ids[0], template_ids[1], template_ids[2], template_ids[3]], "instrumento de medicao", False))
+        devices.append(([template_ids[5]], "linha_1", False))
+        devices.append(([template_ids[5]], "linha_2", False))
+        devices.append(([template_ids[5]], "linha_3", False))
+        devices.append(([template_ids[6]], "controle", False))
+        devices.append(([template_ids[7]], "device", False))
+        devices.append(([template_ids[7]], "dispositivo", False))
+        devices.append(([template_ids[8]], "Camera1", False))
+        devices.append(([template_ids[9]], "Pluviometro", False))
+        devices.append(([template_ids[10]], "SensorNivel", False))
+        devices.append(([template_ids[11]], "logger", False))
+        devices.append(([template_ids[12]], "acesso", False))
+        devices.append(([template_ids[13]], "token", False))
+        devices.append(([template_ids[14]], "CameraQualcomm", True))
+        devices.append(([template_ids[7]], "CronJobEventRequest", False))
+        devices.append(([template_ids[7]], "CronJobHttpRequest", False))
 
         devices_ids = self.createDevices(jwt, devices)
         self.logger.info("Devices created. IDs: " + str(devices_ids))
 
         ###################
-        #Configuring flows
+        # Configuring flows
         ###################
         flows = []
         self.logger.info('creating flows...')
@@ -482,96 +474,96 @@ class SanityTest(BaseTest):
             "flow":
                 [{"id": "3433da79.e543a6", "type": "tab", "label": "Flow 1"},
                  {"id": "5f77d972.391e98",
-                    "type": "event template in",
-                    "z": "3433da79.e543a6",
-                    "name": "ônibus",
-                    "event_create": False,
-                    "event_update": False,
-                    "event_remove": False,
-                    "event_configure": False,
-                    "event_publish": True,
-                    "template_id": str(template_ids[5]),
-                    "x": 154.5,
-                    "y": 277,
-                    "wires": [["845deaaf.f8cb98", "44c99e4.76b8a6"]]},
+                  "type": "event template in",
+                  "z": "3433da79.e543a6",
+                  "name": "ônibus",
+                  "event_create": False,
+                  "event_update": False,
+                  "event_remove": False,
+                  "event_configure": False,
+                  "event_publish": True,
+                  "template_id": str(template_ids[5]),
+                  "x": 154.5,
+                  "y": 277,
+                  "wires": [["845deaaf.f8cb98", "44c99e4.76b8a6"]]},
                  {"id": "845deaaf.f8cb98",
-                    "type": "geofence",
-                    "z": "3433da79.e543a6",
-                    "name": "",
-                    "mode": "polyline",
-                    "filter": "inside",
-                    "points":
-                        [{"latitude": "-22.893729786643423",
-                            "longitude": "-47.060708999633796"},
-                         {"latitude": "-22.888827380892344", "longitude": "-47.0570182800293"},
-                         {"latitude": "-22.887720361534203",
-                            "longitude": "-47.053241729736335"},
-                         {"latitude": "-22.88724592190222", "longitude": "-47.04869270324708"},
-                         {"latitude": "-22.88692962789286", "longitude": "-47.04483032226563"},
-                         {"latitude": "-22.890646035948535", "longitude": "-47.04671859741211"},
-                         {"latitude": "-22.895073963731004",
-                            "longitude": "-47.047061920166016"},
-                         {"latitude": "-22.90013427567171", "longitude": "-47.048091888427734"},
-                         {"latitude": "-22.905589713001355", "longitude": "-47.0463752746582"},
-                         {"latitude": "-22.905115335858504",
-                            "longitude": "-47.050237655639656"},
-                         {"latitude": "-22.905115335858504", "longitude": "-47.05195426940918"},
-                         {"latitude": "-22.906143150903915", "longitude": "-47.05530166625977"},
-                         {"latitude": "-22.902427167370448",
-                            "longitude": "-47.057275772094734"},
-                         {"latitude": "-22.899027348564793",
-                            "longitude": "-47.058563232421875"},
-                         {"latitude": "-22.896813467251835", "longitude": "-47.05890655517578"}],
-                    "geopoint": "payload.data.attrs.gps",
-                    "x": 403.5,
-                    "y": 158,
-                    "wires": [["d905b5c9.4958e8"]]},
+                  "type": "geofence",
+                  "z": "3433da79.e543a6",
+                  "name": "",
+                  "mode": "polyline",
+                  "filter": "inside",
+                  "points":
+                      [{"latitude": "-22.893729786643423",
+                        "longitude": "-47.060708999633796"},
+                       {"latitude": "-22.888827380892344", "longitude": "-47.0570182800293"},
+                       {"latitude": "-22.887720361534203",
+                        "longitude": "-47.053241729736335"},
+                       {"latitude": "-22.88724592190222", "longitude": "-47.04869270324708"},
+                       {"latitude": "-22.88692962789286", "longitude": "-47.04483032226563"},
+                       {"latitude": "-22.890646035948535", "longitude": "-47.04671859741211"},
+                       {"latitude": "-22.895073963731004",
+                        "longitude": "-47.047061920166016"},
+                       {"latitude": "-22.90013427567171", "longitude": "-47.048091888427734"},
+                       {"latitude": "-22.905589713001355", "longitude": "-47.0463752746582"},
+                       {"latitude": "-22.905115335858504",
+                        "longitude": "-47.050237655639656"},
+                       {"latitude": "-22.905115335858504", "longitude": "-47.05195426940918"},
+                       {"latitude": "-22.906143150903915", "longitude": "-47.05530166625977"},
+                       {"latitude": "-22.902427167370448",
+                        "longitude": "-47.057275772094734"},
+                       {"latitude": "-22.899027348564793",
+                        "longitude": "-47.058563232421875"},
+                       {"latitude": "-22.896813467251835", "longitude": "-47.05890655517578"}],
+                  "geopoint": "payload.data.attrs.gps",
+                  "x": 403.5,
+                  "y": 158,
+                  "wires": [["d905b5c9.4958e8"]]},
                  {"id": "d905b5c9.4958e8",
-                    "type": "change",
-                    "z": "3433da79.e543a6",
-                    "name": "",
-                    "rules":
-                        [{"t": "set",
-                            "p": "saida.mensagem",
-                            "pt": "msg",
-                            "to": "Está no Cambuí",
-                            "tot": "str"}],
-                    "action": "",
-                    "property": "",
-                    "from": "",
-                    "to": "",
-                    "reg": "false",
-                    "x": 736.5,
-                    "y": 153,
-                    "wires": [["25c1c361.88827c"]]},
+                  "type": "change",
+                  "z": "3433da79.e543a6",
+                  "name": "",
+                  "rules":
+                      [{"t": "set",
+                        "p": "saida.mensagem",
+                        "pt": "msg",
+                        "to": "Está no Cambuí",
+                        "tot": "str"}],
+                  "action": "",
+                  "property": "",
+                  "from": "",
+                  "to": "",
+                  "reg": "false",
+                  "x": 736.5,
+                  "y": 153,
+                  "wires": [["25c1c361.88827c"]]},
                  {"id": "44c99e4.76b8a6",
-                    "type": "geofence",
-                    "z": "3433da79.e543a6",
-                    "name": "",
-                    "mode": "polyline",
-                    "filter": "outside",
-                    "points":
-                        [{"latitude": "-22.893729786643423",
-                          "longitude": "-47.060708999633796"},
-                         {"latitude": "-22.888827380892344", "longitude": "-47.0570182800293"},
-                         {"latitude": "-22.887720361534203",
-                          "longitude": "-47.053241729736335"},
-                         {"latitude": "-22.88724592190222", "longitude": "-47.04869270324708"},
-                         {"latitude": "-22.88692962789286", "longitude": "-47.04483032226563"},
-                         {"latitude": "-22.890646035948535", "longitude": "-47.04671859741211"},
-                         {"latitude": "-22.895073963731004",
-                          "longitude": "-47.047061920166016"},
-                         {"latitude": "-22.90013427567171", "longitude": "-47.048091888427734"},
-                         {"latitude": "-22.905589713001355", "longitude": "-47.0463752746582"},
-                         {"latitude": "-22.905115335858504",
-                          "longitude": "-47.050237655639656"},
-                         {"latitude": "-22.905115335858504", "longitude": "-47.05195426940918"},
-                         {"latitude": "-22.906143150903915", "longitude": "-47.05530166625977"},
-                         {"latitude": "-22.902427167370448",
-                          "longitude": "-47.057275772094734"},
-                         {"latitude": "-22.899027348564793",
-                          "longitude": "-47.058563232421875"},
-                         {"latitude": "-22.896813467251835", "longitude": "-47.05890655517578"}],
+                  "type": "geofence",
+                  "z": "3433da79.e543a6",
+                  "name": "",
+                  "mode": "polyline",
+                  "filter": "outside",
+                  "points":
+                      [{"latitude": "-22.893729786643423",
+                        "longitude": "-47.060708999633796"},
+                       {"latitude": "-22.888827380892344", "longitude": "-47.0570182800293"},
+                       {"latitude": "-22.887720361534203",
+                        "longitude": "-47.053241729736335"},
+                       {"latitude": "-22.88724592190222", "longitude": "-47.04869270324708"},
+                       {"latitude": "-22.88692962789286", "longitude": "-47.04483032226563"},
+                       {"latitude": "-22.890646035948535", "longitude": "-47.04671859741211"},
+                       {"latitude": "-22.895073963731004",
+                        "longitude": "-47.047061920166016"},
+                       {"latitude": "-22.90013427567171", "longitude": "-47.048091888427734"},
+                       {"latitude": "-22.905589713001355", "longitude": "-47.0463752746582"},
+                       {"latitude": "-22.905115335858504",
+                        "longitude": "-47.050237655639656"},
+                       {"latitude": "-22.905115335858504", "longitude": "-47.05195426940918"},
+                       {"latitude": "-22.906143150903915", "longitude": "-47.05530166625977"},
+                       {"latitude": "-22.902427167370448",
+                        "longitude": "-47.057275772094734"},
+                       {"latitude": "-22.899027348564793",
+                        "longitude": "-47.058563232421875"},
+                       {"latitude": "-22.896813467251835", "longitude": "-47.05890655517578"}],
                   "geopoint": "payload.data.attrs.gps",
                   "x": 412,
                   "y": 372,
@@ -581,19 +573,19 @@ class SanityTest(BaseTest):
                   "z": "3433da79.e543a6",
                   "name": "",
                   "rules":
-                  [{"t": "set",
-                    "p": "saida.mensagem",
-                    "pt": "msg",
-                    "to": "Não está no Cambuí",
-                    "tot": "str"}],
-                    "action": "",
-                    "property": "",
-                    "from": "",
-                    "to": "",
-                    "reg": "false",
-                    "x": 773,
-                    "y": 365,
-                    "wires": [["25c1c361.88827c"]]},
+                      [{"t": "set",
+                        "p": "saida.mensagem",
+                        "pt": "msg",
+                        "to": "Não está no Cambuí",
+                        "tot": "str"}],
+                  "action": "",
+                  "property": "",
+                  "from": "",
+                  "to": "",
+                  "reg": "false",
+                  "x": 773,
+                  "y": 365,
+                  "wires": [["25c1c361.88827c"]]},
                  {"id": "25c1c361.88827c",
                   "type": "multi device out",
                   "z": "3433da79.e543a6",
@@ -608,7 +600,7 @@ class SanityTest(BaseTest):
                   "y": 225,
                   "wires": []}
                  ]
-            })
+        })
         flows.append({
             "name": "http - POST",
             "flow": [
@@ -797,7 +789,8 @@ class SanityTest(BaseTest):
                      "z": "98435f56.9245",
                      "name": "",
                      "rules": [
-                         {"t": "set", "p": "saida.velocidade", "pt": "msg", "to": "payload.data.attrs.velocidade", "tot": "msg"}],
+                         {"t": "set", "p": "saida.velocidade", "pt": "msg", "to": "payload.data.attrs.velocidade",
+                          "tot": "msg"}],
                      "action": "",
                      "property": "",
                      "from": "",
@@ -810,7 +803,8 @@ class SanityTest(BaseTest):
                      "type": "change",
                      "z": "98435f56.9245",
                      "name": "",
-                     "rules": [{"t": "set", "p": "saida.pressao", "pt": "msg", "to": "payload.data.attrs.pressao", "tot": "msg"}],
+                     "rules": [{"t": "set", "p": "saida.pressao", "pt": "msg", "to": "payload.data.attrs.pressao",
+                                "tot": "msg"}],
                      "action": "",
                      "property": "",
                      "from": "",
@@ -823,7 +817,8 @@ class SanityTest(BaseTest):
                      "type": "change",
                      "z": "98435f56.9245",
                      "name": "",
-                     "rules": [{"t": "set", "p": "saida.umidade", "pt": "msg", "to": "payload.data.attrs.umidade", "tot": "msg"}],
+                     "rules": [{"t": "set", "p": "saida.umidade", "pt": "msg", "to": "payload.data.attrs.umidade",
+                                "tot": "msg"}],
                      "action": "",
                      "property": "",
                      "from": "",
@@ -836,8 +831,9 @@ class SanityTest(BaseTest):
                      "type": "change",
                      "z": "98435f56.9245",
                      "name": "",
-                     "rules": [{"t": "set", "p": "saida.temperatura", "pt": "msg", "to": "payload.data.attrs.temperatura",
-                                "tot": "msg"}],
+                     "rules": [
+                         {"t": "set", "p": "saida.temperatura", "pt": "msg", "to": "payload.data.attrs.temperatura",
+                          "tot": "msg"}],
                      "action": "",
                      "property": "",
                      "from": "",
@@ -903,9 +899,9 @@ class SanityTest(BaseTest):
                 ]
             })
 
-        #Adicionar o no remoto kelvin
+        # Adicionar o no remoto kelvin
 
-        self.createRemoteNode(jwt, {"image": "dojot/kelvin-example:3.0.0-alpha2", "id": "kelvin"})
+        #self.createRemoteNode(jwt, {"image": "dojot/kelvin-example:3.0.0-alpha2", "id": "kelvin"})
 
         time.sleep(5)
 
@@ -1232,7 +1228,7 @@ class SanityTest(BaseTest):
                      "z": "81f229c7.c43d88",
                      "name": "",
                      "method": "PUT",
-                     "url": "ftp://10.50.4.31",
+                     "url": "ftp://10.50.4.74",
                      "username": "dojot",
                      "password": "dojot",
                      "filename": "data_filename",
@@ -1283,7 +1279,7 @@ class SanityTest(BaseTest):
                      "z": "81f229c7.c43d88",
                      "name": "",
                      "method": "PUT",
-                     "url": "ftp://10.50.4.31",
+                     "url": "ftp://10.50.4.74",
                      "username": "dojot",
                      "password": "dojot",
                      "filename": "image_filename",
@@ -1407,7 +1403,7 @@ class SanityTest(BaseTest):
                   "field": "reqJOB",
                   "fieldType": "msg",
                   "syntax": "handlebars",
-                  "template": "[          \n  {\n    \"time\": \"*/1 * * * *\",\n    \"timezone\": \"America/Sao_Paulo\",\n    \"name\": \"Keep alive\",\n    \"description\": \"This job sends a keep alive notification to a device every 3 minutes\",\n    \"broker\": {\n        \"subject\": \"dojot.device-manager.device\",\n        \"message\": {\n               \"event\":\"configure\",\n                \"meta\": {\n                    \"service\": \"admin\",\n                    \"timestamp\": "+str(current_time)+"},\n               \"data\": {\n                   \"attrs\": { \"mensagem\": \"keepalive\"},\n                   \"id\": \""+dispositivo_id+"\" \n                }\n        }\n    }\n   }\n]",
+                  "template": "[          \n  {\n    \"time\": \"*/1 * * * *\",\n    \"timezone\": \"America/Sao_Paulo\",\n    \"name\": \"Keep alive\",\n    \"description\": \"This job sends a keep alive notification to a device every 3 minutes\",\n    \"broker\": {\n        \"subject\": \"dojot.device-manager.device.actuation\",\n        \"message\": {\n               \"event\":\"configure\",\n                \"meta\": {\n                    \"service\": " + CONFIG['app']['tenant'] + ",\n                    \"timestamp\": " + str(current_time) + "},\n               \"data\": {\n                   \"attrs\": { \"mensagem\": \"keepalive\"},\n                   \"id\": \"" + dispositivo_id + "\" \n                }\n        }\n    }\n   }\n]",
                   "output": "json",
                   "x": 494.5,
                   "y": 61,
@@ -1499,7 +1495,8 @@ class SanityTest(BaseTest):
                   "field": "reqJOB",
                   "fieldType": "msg",
                   "syntax": "handlebars",
-                  "template": "[    \n{\n   \"time\":\"*/2 * * * *\",\n   \"timezone\": \"America/Sao_Paulo\",\n   \"name\": \"Keep alive\",\n   \"description\": \"This job sends a keep alive notification to a device every 2 minutes\",\n   \"http\": {\n  \"method\": \"PUT\",\n   \"headers\": {\n   \"Authorization\": \"Bearer "+jwt+"\",\n   \"Content-Type\": \"application/json\"\n       },\n   \"url\": \"http://device-manager:5000/device/"+device_id+"/actuate\",\n   \"body\": {\n    \"attrs\": {\n   \"mensagem\": \"tô vivo\"\n  }\n    }\n    }\n   }]",
+                  #"template": "[    \n{\n   \"time\":\"*/2 * * * *\",\n   \"timezone\": \"America/Sao_Paulo\",\n   \"name\": \"Keep alive\",\n   \"description\": \"This job sends a keep alive notification to a device every 2 minutes\",\n   \"http\": {\n  \"method\": \"PUT\",\n   \"headers\": {\n   \"Authorization\": \"Bearer " + str(jwt) + "\",\n   \"Content-Type\": \"application/json\"\n       },\n   \"url\": \"http://device-manager-sidecar:5000/device/" + device_id + "/actuate\",\n   \"body\": {\n            \"attrs\": {\n   \"mensagem\": \"tô vivo\"\n  }\n                },\n        \"internal\": \"true\"\n      }\n   }]",
+                  "template": "[    \n{\n   \"time\":\"*/2 * * * *\",\n   \"timezone\": \"America/Sao_Paulo\",\n   \"name\": \"Keep alive\",\n   \"description\": \"This job sends a keep alive notification to a device every 2 minutes\",\n   \"http\": {\n  \"method\": \"PUT\",\n   \"headers\": {\n   \"Content-Type\": \"application/json\"\n       },\n   \"url\": \"http://device-manager-sidecar:5000/device/" + device_id + "/actuate\",\n   \"body\": {\n            \"attrs\": {\n   \"mensagem\": \"tô vivo\"\n  }\n                },\n        \"internal\": true\n      }\n   }]",
                   "output": "json",
                   "x": 535.5,
                   "y": 71,
@@ -1594,7 +1591,7 @@ class SanityTest(BaseTest):
                   "field": "jobAction",
                   "fieldType": "msg",
                   "syntax": "handlebars",
-                  "template": "{\n    \"subject\": \"dojot.device-manager.device\",\n    \"message\": {\n            \"event\":\"configure\",\n            \"meta\": {\n              \"service\":\"admin\",\n              \"timestamp\": "+str(current_time)+"              \n            },\n            \"data\": {\n                \"attrs\": { \"mensagem\": \"keepalive2\"},\n                \"id\": \""+dispositivo_id+"\"\n            }\n    }\n}",
+                  "template": "{\n    \"subject\": \"dojot.device-manager.device.actuation\",\n    \"message\": {\n            \"event\":\"configure\",\n            \"meta\": {\n              \"service\": " + CONFIG['app']['tenant'] + ",\n              \"timestamp\": " + str(current_time) + "              \n            },\n            \"data\": {\n                \"attrs\": { \"mensagem\": \"keepalive2\"},\n                \"id\": \"" + dispositivo_id + "\"\n            }\n    }\n}",
                   "output": "json",
                   "x": 539.5,
                   "y": 171,
@@ -1672,6 +1669,10 @@ class SanityTest(BaseTest):
                   "wires": [[]]}]
         })
 
+        self.logger.debug('Obtenção de novo token...')
+        jwt = Api.get_jwt()
+        time.sleep(5)
+
         flows.append({
             "name": "CRON-HTTPRequest",
             "enabled": True,
@@ -1725,7 +1726,8 @@ class SanityTest(BaseTest):
                   "field": "jobAction",
                   "fieldType": "msg",
                   "syntax": "handlebars",
-                  "template": "{\n\n \"method\": \"PUT\",\n \"headers\": {\n      \"Authorization\": \"Bearer "+jwt+"\",\n      \"Content-Type\": \"application/json\"\n      },\n      \"url\": \"http://device-manager:5000/device/"+device_id+"/actuate\",\n      \"body\": {\n                \"attrs\": {\"mensagem\": \"tô vivo 2\"}\n               }\n}",
+                  #"template": "{\n\n \"method\": \"PUT\",\n \"headers\": {\n      \"Authorization\": \"Bearer " + jwt + "\",\n      \"Content-Type\": \"application/json\"\n      },\n      \"url\": \"http://device-manager-sidecar:5000/device/" + device_id + "/actuate\",\n      \"body\": {\n                \"attrs\": {\"mensagem\": \"tô vivo 2\"}\n               },\n      \"internal\": \"true\"\n}",
+                  "template": "{\n\n \"method\": \"PUT\",\n \"headers\": {\n       \"Content-Type\": \"application/json\"\n      },\n      \"url\": \"http://device-manager-sidecar:5000/device/" + device_id + "/actuate\",\n      \"body\": {\n                \"attrs\": {\"mensagem\": \"tô vivo 2\"}\n               },\n      \"internal\": \"true\"\n}",
                   "output": "json",
                   "x": 518,
                   "y": 95,
@@ -2362,7 +2364,7 @@ class SanityTest(BaseTest):
                  "ret": "obj",
                  "body": "request",
                  "response": "resposta",
-                 "url": "http://10.50.4.33/auth",
+                 "url": "http://10.50.4.74/auth",
                  "x": 326.5,
                  "y": 275,
                  "wires": [["A19c5db5e70f325", "Ae552a4998e3438"]]},
@@ -2649,64 +2651,15 @@ class SanityTest(BaseTest):
         flows_ids = self.createFlows(jwt, flows)
         self.logger.info("Flows created. IDs: " + str(flows_ids))
 
-        group1 = {"name": "viewer" + str(random.randint(0, 100)),
-                  "description": "Grupo com acesso somente para visualizar as informações"}
-        self.logger.info('creating profiles...')
-        rc, response = Api.create_group(jwt, group1)
-        self.logger.debug(f"Group group1 creation return the result code: {rc} and response: {response}")
-        self.assertTrue(int(rc) == 200, "Error on create group")
-        group1_id = response["id"]
-
-        self.logger.info("Groups created. IDs: " + str(group1_id))
-
-        # adicionar as permissoes ao grupo
-
-        self.logger.info('adding permissions to the created group...')
-        rc, res = Api.add_permission(jwt, group1_id, "2")
-        self.logger.info("Permissions added to the group: " + str(group1_id))
-        self.assertTrue(int(rc) == 200, "codigo inesperado")
-
-        rc, res = Api.add_permission(jwt, group1_id, "4")
-        self.logger.info("Permissions added to the group: " + str(group1_id))
-        self.assertTrue(int(rc) == 200, "codigo inesperado")
-
-        rc, res = Api.add_permission(jwt, group1_id, "6")
-        self.logger.info("Permissions added to the group: " + str(group1_id))
-        self.assertTrue(int(rc) == 200, "codigo inesperado")
-
-        # adicionar usuario
-
-        self.logger.info('creating users...')
-        user1 = {"username": "joao",
-            "service": "teste",
-            "email": "joao@noemail.com",
-            "name": "João",
-            "profile": "admin"
-            }
-        self.createUsers(jwt, user1)
-        self.logger.info("User created: joao")
-
-        user2 = {
-            "username": "maria",
-            "service": "teste",
-            "email": "maria@noemail.com",
-            "name": "Maria",
-            "profile": "admin"
-            }
-        self.createUsers(jwt, user2)
-        self.logger.info("User created: maria")
-
-        # listar tenants
-
-        self.logger.info("listing tenants...")
-        rc, res = Api.get_tenants(jwt)
-        self.logger.info('Result: ' + str(res))
-        self.assertTrue(int(rc) == 200, "codigo inesperado")
 
         # publicações
 
+        self.logger.debug('Obtenção de novo token...')
+        jwt = Api.get_jwt()
+        time.sleep(10)
+
         dev_id = Api.get_deviceid_by_label(jwt, "linha_1")
-        dev_topic = "admin:" + dev_id + "/attrs"
+        dev_topic = CONFIG['app']['tenant'] + ":" + dev_id + "/attrs"
         dev = MQTTClient(dev_id)
         self.logger.info("publicando com dispositivo: " + dev_id + ", linha_1")
         rc = dev.publish(dev_topic,
@@ -2714,37 +2667,33 @@ class SanityTest(BaseTest):
         self.logger.debug("rc: " + str(rc))
         self.assertTrue(rc == 0, "** FAILED ASSERTION: received an unexpected result code: " + str(rc) + " **")
 
-        self.logger.info("waiting for flows...")
-        time.sleep(10)
+        time.sleep(3)
 
         dev.publish(dev_topic,
                      {"gps":"-22.893619, -47.052921","velocidade":40,"passageiros":45,"operacional":True})
 
         time.sleep(3)
 
-
-        self.logger.info("creating cron jobs - EventRequest")
         dev_id = Api.get_deviceid_by_label(jwt, "dispositivo")
-        dev_topic = "admin:" + dev_id + "/attrs"
+        dev_topic = CONFIG['app']['tenant'] + ":" + dev_id + "/attrs"
         dev = MQTTClient(dev_id)
         self.logger.info("publicando com dispositivo: " + dev_id + ", dispositivo")
         dev.publish(dev_topic, {"int": 2, "bool": True})
+        self.logger.info("ativação do fluxo - EventRequest")
 
-        time.sleep(5)
-
-        #ativação do cron: bool=true
-        self.logger.info("creating cron jobs - HTTPRequest...")
+        time.sleep(3)
 
         dev_id = Api.get_deviceid_by_label(jwt, "device")
-        dev_topic = "admin:" + dev_id + "/attrs"
+        dev_topic = CONFIG['app']['tenant'] + ":" + dev_id + "/attrs"
         dev = MQTTClient(dev_id)
         self.logger.info("publicando com dispositivo: " + dev_id + ", device")
         dev.publish(dev_topic, {"int": 1, "bool": True})
+        self.logger.info("ativação do fluxo - HTTPRequest")
 
-        time.sleep(5)
+        time.sleep(3)
 
         dev_id = Api.get_deviceid_by_label(jwt, "anemometro")
-        dev_topic = "admin:" + dev_id + "/attrs"
+        dev_topic = CONFIG['app']['tenant'] + ":" + dev_id + "/attrs"
         dev = MQTTClient(dev_id)
         self.logger.info("publicando com dispositivo: " + dev_id + ", anemometro")
         dev.publish(dev_topic, {"velocidade": 50})
@@ -2752,7 +2701,7 @@ class SanityTest(BaseTest):
         time.sleep(3)
 
         dev_id = Api.get_deviceid_by_label(jwt, "barometro")
-        dev_topic = "admin:" + dev_id + "/attrs"
+        dev_topic = CONFIG['app']['tenant'] + ":" + dev_id + "/attrs"
         dev = MQTTClient(dev_id)
         self.logger.info("publicando com dispositivo: " + dev_id + ", barometro")
         dev.publish(dev_topic, {"pressao": 0.9})
@@ -2760,19 +2709,18 @@ class SanityTest(BaseTest):
         time.sleep(3)
 
         dev_id = Api.get_deviceid_by_label(jwt, "higrometro")
-        dev_topic = "admin:" + dev_id + "/attrs"
+        dev_topic = CONFIG['app']['tenant'] + ":" + dev_id + "/attrs"
         dev = MQTTClient(dev_id)
         self.logger.info("publicando com dispositivo: " + dev_id + ", higrometro")
         dev.publish(dev_topic, {"umidade": 15})
-
         time.sleep(3)
-
+        self.logger.info("publicando com dispositivo: " + dev_id + ", higrometro")
         dev.publish(dev_topic, {"umidade": 21})
 
         time.sleep(3)
 
         dev_id = Api.get_deviceid_by_label(jwt, "termometro Celsius")
-        dev_topic = "admin:" + dev_id + "/attrs"
+        dev_topic = CONFIG['app']['tenant'] + ":" + dev_id + "/attrs"
         dev = MQTTClient(dev_id)
         self.logger.info("publicando com dispositivo: " + dev_id + ", termometro Celsius")
         dev.publish(dev_topic, {"temperatura": 30})
@@ -2780,175 +2728,151 @@ class SanityTest(BaseTest):
         time.sleep(3)
 
         dev_id = Api.get_deviceid_by_label(jwt, "Pluviometro")
-        dev_topic = "admin:" + dev_id + "/attrs"
+        dev_topic = CONFIG['app']['tenant'] + ":" + dev_id + "/attrs"
         dev = MQTTClient(dev_id)
         self.logger.info("publicando com dispositivo: " + dev_id + ", Pluviometro")
         dev.publish(dev_topic, {"chuva": 5})
-
         time.sleep(5)
-
-
         self.logger.info("publicando com dispositivo: " + dev_id + ", Pluviometro")
         dev.publish(dev_topic, {"chuva": 6})
-
         time.sleep(5)
-
         self.logger.info("publicando com dispositivo: " + dev_id + ", Pluviometro")
         dev.publish(dev_topic, {"chuva": 10})
 
-        time.sleep(3)
+        time.sleep(5)
 
         dev_id = Api.get_deviceid_by_label(jwt, "SensorNivel")
-        dev_topic = "admin:" + dev_id + "/attrs"
+
+        dev_topic = CONFIG['app']['tenant'] + ":" + dev_id + "/attrs"
         dev = MQTTClient(dev_id)
         self.logger.info("publicando com dispositivo: " + dev_id + ", SensorNivel")
         dev.publish(dev_topic, {"nivel": 1})
-
         time.sleep(5)
-
         self.logger.info("publicando com dispositivo: " + dev_id + ", SensorNivel")
         dev.publish(dev_topic, {"nivel": 2.1})
-
         time.sleep(5)
-
         self.logger.info("publicando com dispositivo: " + dev_id + ", SensorNivel")
         dev.publish(dev_topic, {"nivel": 2.6})
 
         time.sleep(3)
 
         dev_id = Api.get_deviceid_by_label(jwt, "linha_2")
-        dev_topic = "admin:" + dev_id + "/attrs"
+        dev_topic = CONFIG['app']['tenant'] + ":" + dev_id + "/attrs"
         dev = MQTTClient(dev_id)
         self.logger.info("publicando com dispositivo: " + dev_id + ", linha_2")
         dev.publish(dev_topic, {"velocidade": 60})
 
         time.sleep(3)
 
-
-        ###################
-        # check publication in history
-        ###################
-
-        self.logger.info("checking the results obtained in the execution of the flows...")
-
-        self.logger.info("waiting for flows...")
-        time.sleep(15)  # waiting for flow
-
-        dev_id = Api.get_deviceid_by_label(jwt, "linha_1")
-        rc, count = get_history_count_attr_value(self, jwt, dev_id, "velocidade", 40)
-        self.assertTrue(rc == 200, "** FAILED ASSERTION: received an unexpected result code: " + str(rc) + " **")
-        self.assertTrue(count == 1, "** FAILED ASSERTION: Unexpected count value: " + str(count) + " **")
-
-        time.sleep(3)
-
-        self.logger.info("flow with actuate node...")
-        rc, res = get_history_last_attr(self, jwt, dev_id, "letreiro")
-        self.assertTrue(rc == 200, "** FAILED ASSERTION: received an unexpected result code **")
-        self.assertTrue(res["value"] == "LOTADO", "** FAILED ASSERTION: received an unexpected message: " +
-                        res["value"] + " **")
-        time.sleep(3)
-
-        self.logger.info("flow with geofence node...")
-        rc, res = get_history_last_attr(self, jwt, dev_id, "mensagem")
-        self.assertTrue(rc == 200, "** FAILED ASSERTION: received an unexpected result code: " + str(rc) + " **")
-        self.assertTrue(res["value"] == "Está no Cambuí", "** FAILED ASSERTION: received an unexpected message: " +
-                        res["value"] + " **")
-        time.sleep(3)
-
-        rc, count = get_history_count_attr_value(self, jwt, dev_id, "letreiro", "JARDIM PAULISTA")
-        self.logger.info("total de registros: " + str(count))
-        self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
-        time.sleep(3)
-
-        rc, count = get_history_count_attr(self, jwt, dev_id, "gps")
-        self.logger.info("total de registros: " + str(count))
-        self.assertTrue(count == 2, "** FAILED ASSERTION: received an unexpected count **")
-        time.sleep(3)
+        dev_id = Api.get_deviceid_by_label(jwt, "acesso")
+        dev_topic = CONFIG['app']['tenant'] + ":" + dev_id + "/attrs"
+        dev = MQTTClient(dev_id)
+        self.logger.info("publicando com dispositivo: " + dev_id + ", acesso")
+        dev.publish(dev_topic, {"username": "master", "passwd": "master"})
 
 
-        dev_id = Api.get_deviceid_by_label(jwt, "dispositivo")
-        rc, res = get_history_last_attr(self, jwt, dev_id, "int")
-        self.assertTrue(rc == 200, "** FAILED ASSERTION: received an unexpected result code: " + str(rc) + " **")
-        self.assertTrue(res["value"] == 2, "** FAILED ASSERTION: received an unexpected message: " +
-                        str(res["value"]) + " **")
+        # TESTE HTTP AGENT 
+        # self.logger.info("Starting Http Agent Insecure Mode")
+        # dev_id = add_a_simple_device(self, jwt)
+        
 
-        self.logger.info("waiting for flows...")
-        time.sleep(10)  # waiting for flow
+        # publish_http_agent = Api.publish_http_agent_insegure_mode_simple_device(jwt,dev_id)
+        # self.assertTrue(publish_http_agent == 204, "Invalid Code")
+        # self.logger.info('Device created : ' + dev_id)
 
-        dev_id = Api.get_deviceid_by_label(jwt, "anemometro")
-        rc, count = get_history_count_attr(self, jwt, dev_id, "velocidade")
-        self.logger.info("total de registros: " + str(count))
-        self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
-        time.sleep(3)
-
-        dev_id = Api.get_deviceid_by_label(jwt, "barometro")
-        rc, count = get_history_count_attr(self, jwt, dev_id, "pressao")
-        self.logger.info("total de registros: " + str(count))
-        self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
-        time.sleep(3)
-
-        dev_id = Api.get_deviceid_by_label(jwt, "higrometro")
-        rc, count = get_history_count_attr(self, jwt, dev_id, "umidade")
-        self.logger.info("total de registros: " + str(count))
-        self.assertTrue(count == 2, "** FAILED ASSERTION: received an unexpected count **")
-        time.sleep(3)
+        # dev_id = Api.get_deviceid_by_label(jwt, "token")
+        # publish_http_agent = Api.publish_http_agent_insegure_mode_device_token(jwt,dev_id)
+        # self.assertTrue(publish_http_agent == 204, "Invalid Code")
+        # self.logger.info('Device created : ' + dev_id)
 
 
-        dev_id = Api.get_deviceid_by_label(jwt, "device")
-
-        #rc, res = get_history_first_attr(self, jwt, dev_id, "mensagem")
-        #self.assertTrue(rc == 200, "** FAILED ASSERTION: received an unexpected result code: " + str(rc) + " **")
-        #self.logger.info("device_id: " + str(dev_id) + ", mensagem: " + str(res))
-        #self.assertTrue(res["value"] == "baixa umidade relativa do ar: 15 !", "** FAILED ASSERTION: received an unexpected message: " + str(res["value"]) + " **")
-
-        rc, count = get_history_count_attr_value(self, jwt, dev_id, "mensagem", "baixa umidade relativa do ar: 15 !")
-        self.logger.info("total de registros: " + str(count))
-        self.assertTrue(count == 2, "** FAILED ASSERTION: Unexpected count value")
-
-        time.sleep(3)
-
-        dev_id = Api.get_deviceid_by_label(jwt, "termometro Celsius")
-        rc, count = get_history_count_attr(self, jwt, dev_id, "temperatura")
-        self.logger.info("total de registros: " + str(count))
-        self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
-        time.sleep(3)
-
-        dev_id = Api.get_deviceid_by_label(jwt, "device")
-        rc, res = get_history_last_attr(self, jwt, dev_id, "bool")
-        self.assertTrue(rc == 200, "** FAILED ASSERTION: received an unexpected result code: " + str(rc) + " **")
-        self.assertTrue(res["value"] == True, "** FAILED ASSERTION: received an unexpected message: " +
-                        str(res["value"]) + " **")
+        # dev_id = Api.get_deviceid_by_label(jwt, "linha_1")
+        # publish_http_agent = Api.publish_http_agent_insegure_mode_device_linha_1_bool(jwt,dev_id)
+        # self.assertTrue(publish_http_agent == 204, "Invalid Code")
+        # self.logger.info('Device created : ' + dev_id)
 
 
-        self.logger.info("waiting for flows...")
-        time.sleep(10)  # waiting for flow
+        # publish_http_agent = Api.publish_http_agent_insegure_mode_device_linha_1_geo(jwt,dev_id)
+        # self.assertTrue(publish_http_agent == 204, "Invalid Code")
+        # self.logger.info('Device created : ' + dev_id)
 
-        dev_id = Api.get_deviceid_by_label(jwt, "dispositivo")
-        rc, res = get_history_last_attr(self, jwt, dev_id, "bool")
-        self.assertTrue(rc == 200, "** FAILED ASSERTION: received an unexpected result code: " + str(rc) + " **")
-        self.assertTrue(res["value"] == True, "** FAILED ASSERTION: received an unexpected message: " +
-                        str(res["value"]) + " **")
+        # self.logger.info("Finished Http Agent ...")
+        # time.sleep(3)
+
+        self.logger.info("Starting test Cron")
+
+        # Criação broker job
+        current_time = int(time.time() * 1000)
+
+        dev_id = Api.get_deviceid_by_label(jwt, "CronJobEventRequest")
+        self.logger.info('creating cron jobs - EventRequest...' + str(dev_id))
+        data = {
+            "time": "*/1 * * * *",
+            "timezone": "America/Sao_Paulo",
+            "name": "Keep alive",
+            "description": "This job sends a keep alive notification to a device every 1 minutes",
+            "broker": {
+                "subject": "dojot.device-manager.device.actuation",
+                "message": {
+                    "event": "configure",
+                    "data": {
+                        "attrs": {"mensagem": "teste de agendamento de um EventRequest"},
+                        "id": str(dev_id)
+                    },
+                    "meta": {
+                        "service": CONFIG['app']['tenant'],
+                        "timestamp": str(current_time)
+                    }
+                }
+            }
+        }
+        self.logger.info('data: ' + str(data))
+        rc, res = Api.create_cron_job(jwt, str(dev_id), json.dumps(data))
+        self.logger.info('Result: ' + str(res))
+
+        self.assertTrue(int(rc) == 201, "codigo inesperado")
 
 
-        time.sleep(3)
+        # Criação http job
+        dev_id = Api.get_deviceid_by_label(jwt, "CronJobHttpRequest")
+        self.logger.info("creating cron jobs - HTTPRequest..." + str(dev_id))
+        data = {
+            "time": "*/1 * * * *",
+            "timezone": "America/Sao_Paulo",
+            "name": "Keep alive",
+            "description": "This job sends a keep alive notification to a device every 1 minutes",
+            "http": {
+                "method": "PUT",
+                "headers": {
+                    #"Authorization": "Bearer " + str(jwt),
+                    "Content-Type": "application/json"
+                    },
+                "url": "{0}:{1}/device/{2}/actuate".format(CONFIG['device-manager']['url'],CONFIG['device-manager']['port'],dev_id),
+                "body": {
+                    "attrs": {
+                        "mensagem": "teste de agendamento de um HTTPRequest"
+                    }
+                    },
+                "internal": True
+                }
+            }
+        self.logger.info('data: ' + str(data))
 
-        dev_id = Api.get_deviceid_by_label(jwt, "Pluviometro")
-        rc, count = get_history_count_attr(self, jwt, dev_id, "chuva")
-        self.logger.info("total de registros: " + str(count))
-        self.assertTrue(count == 3, "** FAILED ASSERTION: received an unexpected count **")
+        rc, res = Api.create_cron_job(jwt, str(dev_id), json.dumps(data))
+        self.logger.info('Result: ' + str(res) + ', ' + str(rc))
+        self.assertTrue(int(rc) == 201, "codigo inesperado")
 
-        time.sleep(3)
+        #CHECANDO OS AGENDAMENTOS DO CRON
 
-        dev_id = Api.get_deviceid_by_label(jwt, "SensorNivel")
-        rc, count = get_history_count_attr(self, jwt, dev_id, "nivel")
-        self.assertTrue(count == 3, "** FAILED ASSERTION: received an unexpected count **")
-        self.logger.info("total de registros: " + str(count))
+        self.logger.info('Checando os agendamentos')
 
+        rc, res = Api.get_cron_jobs(jwt)
+        self.logger.debug('Result: ' + str(res) + ', ' + str(rc))
+        self.assertTrue(int(rc) == 200, "codigo inesperado")
 
+        # Teste do serviço FTP (desativado para o teste da integração contínua)
 
-        # Teste do serviço kafka2ftp (desativado para o teste do deploy contínuo)
-
-        '''
+        """
 
         dev_id = Api.get_deviceid_by_label(jwt, "Camera1")
         dev_topic = "admin:" + dev_id + "/attrs"
@@ -2957,226 +2881,158 @@ class SanityTest(BaseTest):
         file_t = open(ROOT_DIR + "/" + "resources/img/arquivo.jpg.txt", 'rb')
         blob_data = bytearray(file_t.read())
         dev.publish(dev_topic, blob_data)
-
-        self.logger.info("waiting for flows...")
-        time.sleep(10)
-
-        rc, count = get_history_count_attr(self, jwt, dev_id, "band")
-        self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
-        self.logger.info("total de registros: " + str(count))
         
-        dev_id = Api.get_deviceid_by_label(jwt, "CameraQualcomm")
-        dev_topic = "admin:" + dev_id + "/attrs"
-        dev = MQTTClient(dev_id)
-        self.logger.info("publicando com dispositivo: " + dev_id)
-        file_t = open(ROOT_DIR + "/" + "resources/img/arquivo.jpg.qualcomm.txt", 'rb')
-        blob_data = bytearray(file_t.read())
-        dev.publish(dev_topic, blob_data)
+        """
 
-        self.logger.info("waiting for flows...")
-        time.sleep(10)
+        #RETRIEVER
 
-        rc, count = get_history_count_attr(self, jwt, dev_id, "band")
-        self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
-        self.logger.info("total de registros: " + str(count))
-        '''
+        self.logger.info("Validação dos dados...")
 
-        #Teste do nó http request (json) (desativado para o teste do deploy contínuo)
+        self.logger.debug('Obtenção de novo token...')
+        jwt = Api.login_new_tenant()
 
-        '''
-        dev_id = Api.get_deviceid_by_label(jwt, "acesso")
-        dev_topic = "admin:" + dev_id + "/attrs"
-        dev = MQTTClient(dev_id)
-        self.logger.info("publicando com dispositivo: " + dev_id + ", acesso")
-        dev.publish(dev_topic, {"username": "admin", "passwd": "admin"})
+        self.logger.info("Aguardando 30s...")
+        time.sleep(30)
+
+        dev_id = Api.get_deviceid_by_label(jwt, "linha_1")
+        self.logger.info("recuperando dados do dispositivo: " + dev_id + ", linha_1, atributo velocidade")
+        rc, count = get_retriever_count_attr(self, jwt, dev_id, "velocidade")
+        self.assertTrue(rc == 200, "** FAILED ASSERTION: received an unexpected result code: " + str(rc) + " **")
+        self.assertTrue(count == 2, "** FAILED ASSERTION: Unexpected count value: " + str(count) + " **")
 
         time.sleep(3)
 
-        rc, count = get_history_count_attr(self, jwt, dev_id, "username")
-        self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
+        self.logger.info("recuperando dados do dispositivo: " + dev_id + ", linha_1, atributo gps")
+        rc, count = get_retriever_count_attr(self, jwt, dev_id, "gps")
         self.logger.info("total de registros: " + str(count))
-        '''
+        self.assertTrue(count == 2, "** FAILED ASSERTION: received an unexpected count **")
 
+        time.sleep(3)
+
+        self.logger.info("recuperando dados do dispositivo: " + dev_id + ", linha_1, atributo passageiros")
+        rc, count = get_retriever_count_attr(self, jwt, dev_id, "passageiros")
+        self.logger.info("total de registros: " + str(count))
+        self.assertTrue(count == 2, "** FAILED ASSERTION: received an unexpected count **")
+
+        time.sleep(3)
+
+        self.logger.info("recuperando dados do dispositivo: " + dev_id + ", linha_1, atributo operacional")
+        rc, count = get_retriever_count_attr(self, jwt, dev_id, "operacional")
+        self.logger.info("total de registros: " + str(count))
+        self.assertTrue(count == 2, "** FAILED ASSERTION: received an unexpected count **")
+
+        time.sleep(3)
+
+        dev_id = Api.get_deviceid_by_label(jwt, "dispositivo")
+        self.logger.info("recuperando dados do dispositivo: " + dev_id + ", dispositivo, atributo int")
+        rc, count = get_retriever_count_attr(self, jwt, dev_id, "int")
+        self.logger.info("total de registros: " + str(count))
+        self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
+
+        time.sleep(3)
+
+        dev_id = Api.get_deviceid_by_label(jwt, "device")
+        self.logger.info("recuperando dados do dispositivo: " + dev_id + ", device, atributo int")
+        rc, count = get_retriever_count_attr(self, jwt, dev_id, "int")
+        self.logger.info("total de registros: " + str(count))
+        self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
+
+        time.sleep(3)
+
+        dev_id = Api.get_deviceid_by_label(jwt, "anemometro")
+        self.logger.info("recuperando dados do dispositivo: " + dev_id + ", anemometro, atributo velocidade")
+        rc, count = get_retriever_count_attr(self, jwt, dev_id, "velocidade")
+        self.logger.info("total de registros: " + str(count))
+        self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
+
+        time.sleep(3)
+
+        dev_id = Api.get_deviceid_by_label(jwt, "barometro")
+        self.logger.info("recuperando dados do dispositivo: " + dev_id + ", barometro, atributo pressao")
+        rc, count = get_retriever_count_attr(self, jwt, dev_id, "pressao")
+        self.logger.info("total de registros: " + str(count))
+        self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
+
+        time.sleep(3)
+
+        dev_id = Api.get_deviceid_by_label(jwt, "higrometro")
+        self.logger.info("recuperando dados do dispositivo: " + dev_id + ", higrometro, atributo umidade")
+        rc, count = get_retriever_count_attr(self, jwt, dev_id, "umidade")
+        self.logger.info("total de registros: " + str(count))
+        self.assertTrue(count == 2, "** FAILED ASSERTION: received an unexpected count **")
+
+        time.sleep(3)
+
+        dev_id = Api.get_deviceid_by_label(jwt, "termometro Celsius")
+        self.logger.info("recuperando dados do dispositivo: " + dev_id + ", termometro Celsius, atributo temperatura")
+        rc, count = get_retriever_count_attr(self, jwt, dev_id, "temperatura")
+        self.logger.info("total de registros: " + str(count))
+        self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
+
+        time.sleep(3)
+
+        dev_id = Api.get_deviceid_by_label(jwt, "device")
+        self.logger.info("recuperando dados do dispositivo: " + dev_id + ", device, atributo bool")
+        rc, count = get_retriever_count_attr(self, jwt, dev_id, "bool")
+        self.logger.info("total de registros: " + str(count))
+        self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
+
+        time.sleep(3)
+
+        dev_id = Api.get_deviceid_by_label(jwt, "dispositivo")
+        self.logger.info("recuperando dados do dispositivo: " + dev_id + ", dispositivo, atributo bool")
+        rc, res = get_retriever_count_attr(self, jwt, dev_id, "bool")
+        self.logger.info("total de registros: " + str(count))
+        self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
+
+        time.sleep(3)
+
+        self.logger.info("recuperando dados do dispositivo: " + dev_id + ", Pluviometro, atributo chuva")
+        dev_id = Api.get_deviceid_by_label(jwt, "Pluviometro")
+        rc, count = get_retriever_count_attr(self, jwt, dev_id, "chuva")
+        self.logger.info("total de registros: " + str(count))
+        self.assertTrue(count == 3, "** FAILED ASSERTION: received an unexpected count **")
+
+        time.sleep(3)
+
+        dev_id = Api.get_deviceid_by_label(jwt, "SensorNivel")
+        self.logger.info("recuperando dados do dispositivo: " + dev_id + ", SensorNivel, atributo nivel")
+        rc, count = get_retriever_count_attr(self, jwt, dev_id, "nivel")
+        self.assertTrue(count == 3, "** FAILED ASSERTION: received an unexpected count **")
+        self.logger.info("total de registros: " + str(count))
 
         time.sleep(3)
 
         dev_id = Api.get_deviceid_by_label(jwt, "linha_2")
-        rc, count = get_history_count_attr(self, jwt, dev_id, "velocidade")
+        self.logger.info("recuperando dados do dispositivo: " + dev_id + ", linha_2, atributo velocidade")
+        rc, count = get_retriever_count_attr(self, jwt, dev_id, "velocidade")
         self.logger.info("total de registros: " + str(count))
         self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
 
         time.sleep(3)
 
+
         # create device linha_4
-        self.logger.info('creating device linha_4...')
-        rc, res = Api.create_device(jwt, [template_ids[5]], "linha_4")
-        self.logger.info('Result: ' + str(res))
+        self.logger.info('Criação do device linha_4...')
+        rc, res = Api.create_device(jwt, [template_ids[15]], "linha_4", True)
+        self.logger.debug('Result: ' + str(res) + ', ' + str(rc))
         self.assertTrue(int(rc) == 200, "codigo inesperado")
 
         time.sleep(3)
 
         # update device linha_4
         dev_id = Api.get_deviceid_by_label(jwt, "linha_4")
-        self.logger.info('updating device linha_4...' + str(dev_id))
-        data = {"templates": [template_ids[5]], "label": "update_linha_4"}
+        self.logger.info('Atualização do device linha_4...' + str(dev_id))
+        data = {"templates": [template_ids[15]],"disabled": False, "label": "update_linha_4"}
         rc, res = Api.update_device(jwt, str(dev_id), json.dumps(data))
-        self.logger.info('Result: ' + str(res))
-        # self.assertTrue(int(rc) == 200, "codigo inesperado")
+        self.logger.debug('Result: ' + str(res) + ', ' + str(rc))
+        self.assertTrue(int(rc) == 200, "codigo inesperado")
 
         # delete device linha_4
         device_id = Api.get_deviceid_by_label(jwt, "update_linha_4")
-        self.logger.info('removing device update_linha_4...')
+        self.logger.info('Remoção do device update_linha_4...')
         rc, res = Api.delete_device(jwt, str(device_id))
-        self.logger.info('Result: ' + str(res))
-        self.assertTrue(int(rc) == 200, "codigo inesperado")
-
-        # validações
-        self.logger.info("waiting for flows...")
-        time.sleep(15)  # waiting for flow
-
-        # check flows result
-
-        self.logger.info("aggregation flow result...")
-        dev_id = Api.get_deviceid_by_label(jwt, "instrumento de medicao")
-        rc, count = get_history_count_attr(self, jwt, dev_id, "umidade")
-        self.logger.info("total de registros: " + str(count))
-        self.assertTrue(count == 2, "** FAILED ASSERTION: received an unexpected count **")
-        time.sleep(3)
-        rc, count = get_history_count_attr(self, jwt, dev_id, "pressao")
-        self.logger.info("total de registros: " + str(count))
-        self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
-        time.sleep(3)
-        rc, count = get_history_count_attr(self, jwt, dev_id, "temperatura")
-        self.logger.info("total de registros: " + str(count))
-        self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
-        time.sleep(3)
-        rc, count = get_history_count_attr(self, jwt, dev_id, "velocidade")
-        self.logger.info("total de registros: " + str(count))
-        self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
-
-        time.sleep(3)
-
-        self.logger.info("flow with cumulative sum...")
-        dev_id = Api.get_deviceid_by_label(jwt, "controle")
-        rc, count = get_history_count_attr(self, jwt, dev_id, "medida")
-        self.logger.info("total de registros: " + str(count))
-        self.assertTrue(count == 3, "** FAILED ASSERTION: received an unexpected count **")
-        time.sleep(3)
-        rc, count = get_history_count_attr(self, jwt, dev_id, "mensagem")
-        self.logger.info("total de registros: " + str(count))
-        self.assertTrue(count == 6, "** FAILED ASSERTION: received an unexpected count **")
-
-        time.sleep(3)
-
-        self.logger.info("flow with merge data node...")
-        dev_id = Api.get_deviceid_by_label(jwt, "logger")
-        rc, count = get_history_count_attr(self, jwt, dev_id, "data")
-        self.logger.info("total de registros: " + str(count))
-        self.assertTrue(count == 8, "** FAILED ASSERTION: received an unexpected count **")
-
-        time.sleep(3)
-
-        self.logger.info("flow with remote node...")
-        dev_id = Api.get_deviceid_by_label(jwt, "termometro Kelvin")
-        # check publication in history
-        rc, res = get_history_last_attr(self, jwt, dev_id, "temperatura")
-        self.assertTrue(rc == 200, "** FAILED ASSERTION: received an unexpected result code: " + str(rc) + " **")
-        self.assertTrue(res["value"] == 303.15, "** FAILED ASSERTION: received an unexpected message: " +
-                        str(res["value"]) + " **")
-
-        time.sleep(3)
-
-        '''
-        dev_id = Api.get_deviceid_by_label(jwt, "token")
-        rc, count = get_history_count_attr(self, jwt, dev_id, "json")
-        self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
-        self.logger.info("total de registros: " + str(count))
-        rc, count = get_history_count_attr(self, jwt, dev_id, "jwt")
-        self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
-        self.logger.info("total de registros: " + str(count))
-        '''
-
-        self.logger.info("checking if cron jobs have been configured...")
-        dev_id = Api.get_deviceid_by_label(jwt, "device")
-        rc, count = get_history_count_attr(self, jwt, dev_id, "str")
-        self.logger.info("total de registros: " + str(count))
-        self.assertTrue(count == 2, "** FAILED ASSERTION: received an unexpected count **")
-        time.sleep(3)
-        rc, count = get_history_count_attr(self, jwt, dev_id, "mensagem")
-        self.logger.info("total de registros: " + str(count))
-        self.assertTrue(count >= 2, "** FAILED ASSERTION: received an unexpected count **")
-
-        time.sleep(3)
-
-        dev_id = Api.get_deviceid_by_label(jwt, "dispositivo")
-        rc, count = get_history_count_attr(self, jwt, dev_id, "mensagem")
-        self.logger.info("total de registros: " + str(count))
-        self.assertTrue(count != 0, "** FAILED ASSERTION: received an unexpected count **")
-
-        self.logger.info("checking if profile was created...")
-        rc, count = get_count_profiles(self, jwt)
-        self.logger.info("total de registros: " + str(count))
-        self.assertTrue(count == 3, "** FAILED ASSERTION: received an unexpected count **")
-
-        time.sleep(3)
-
-        self.logger.info("checking if users were created...")
-        rc, count = get_count_users(self, jwt)
-        self.logger.info("total de registros: " + str(count))
-        self.assertTrue(count == 3, "** FAILED ASSERTION: received an unexpected count **")
-
-        time.sleep(3)
-
-        # check publication in influxdb
-
-        self.logger.info("checking if data has been stored in influxdb...")
-        dev_id = Api.get_deviceid_by_label(jwt, "Pluviometro")
-        rc, count = get_retriever_count_attr(self, jwt, dev_id, "chuva")
-        self.logger.info("total de registros: " + str(count))
-        self.assertTrue(count == 3, "** FAILED ASSERTION: received an unexpected count **")
-
-        self.logger.info("waiting for flows...")
-        time.sleep(10)
-
-        #removendo crontab
-
-        self.logger.info("removing cron jobs...")
-        dev_id = Api.get_deviceid_by_label(jwt, "dispositivo")
-        dev_topic = "admin:" + dev_id + "/attrs"
-        dev = MQTTClient(dev_id)
-        self.logger.info("publicando com dispositivo: " + dev_id + ", dispositivo")
-        dev.publish(dev_topic, {"bool": False})
-
-        time.sleep(3)
-        rc, res = get_history_last_attr(self, jwt, dev_id, "bool")
-        self.assertTrue(rc == 200, "** FAILED ASSERTION: received an unexpected result code: " + str(rc) + " **")
-        self.assertTrue(res["value"] == False, "** FAILED ASSERTION: received an unexpected message: " +
-                        str(res["value"]) + " **")
-
-        dev_id = Api.get_deviceid_by_label(jwt, "device")
-        dev_topic = "admin:" + dev_id + "/attrs"
-        dev = MQTTClient(dev_id)
-        self.logger.info("publicando com dispositivo: " + dev_id + ", device")
-        dev.publish(dev_topic, {"bool": False})
-
-        time.sleep(3)
-        rc, res = get_history_last_attr(self, jwt, dev_id, "bool")
-        self.assertTrue(rc == 200, "** FAILED ASSERTION: received an unexpected result code: " + str(rc) + " **")
-        self.assertTrue(res["value"] == False, "** FAILED ASSERTION: received an unexpected message: " +
-                        str(res["value"]) + " **")
-
-
-        self.logger.info("checking if notifications were generated...")
-        rc, count = get_history_count_notifications(self, jwt)
-        self.logger.info("total de registros: " + str(count))
-        self.assertTrue(count == 8, "** FAILED ASSERTION: received an unexpected count **")
-        time.sleep(3)
-
-
-        # remove remote nodes
-        self.logger.info("removing remote nodes...")
-        rc, res = Api.remove_remote_nodes(jwt)
-        self.logger.info('Result: ' + str(res))
+        self.logger.debug('Result: ' + str(res) + ', ' + str(rc))
         self.assertTrue(int(rc) == 200, "codigo inesperado")
 
 
@@ -3191,12 +3047,16 @@ class SanityTest(BaseTest):
         self.assertTrue(rc == 204,
                         "** FAILED ASSERTION: Unexpected result code value: " + str(rc) + ". Body: " + str(res))
         # waiting to process
-        time.sleep(5)
-        self.logger.info('Checking history for publication')
-        rc, count = get_history_count_attr_value(self, jwt, device_id, "temperature", 90)
-        self.assertTrue(rc == 200, "** FAILED ASSERTION: Unexpected result code: " + str(rc))
+        self.logger.info('Esperando o dado ser armazenado no influxdb')
+        time.sleep(10)
+
+        self.logger.info('Checando se o dado foi publicado')
+        rc, count = get_retriever_count_attr(self, jwt, device_id, "temperature")
         self.logger.info("total de registros: " + str(count) + ", " + str(device_id))
         self.assertTrue(count == 1, "** FAILED ASSERTION: Unexpected count value")
+
+
+        #File Mgmt
 
 
         self.logger.info("file-mgmt test...")
@@ -3207,6 +3067,146 @@ class SanityTest(BaseTest):
 
         path = "arquivos/arquivo.txt"
 
+        self.logger.info('upload arquivo: ' + str(file))
         rc, res = Api.upload_file(jwt, file, path)
         self.logger.info('Result: ' + str(res) + ', ' + str(rc))
         self.assertTrue(int(rc) == 201, "codigo inesperado")
+
+        self.logger.info('lista os arquivos armazenados')
+        rc, res = Api.list_stored_files(jwt, 10)
+        self.logger.info('Result: ' + str(res) + ', ' + str(rc))
+        self.assertTrue(int(rc) == 200, "codigo inesperado")
+
+        self.logger.info('download arquivo')
+        rc = Api.download_file(jwt, file, path)
+        self.logger.info('Result: ' + str(rc))
+        self.assertTrue(int(rc) == 200, "codigo inesperado")
+
+        self.logger.info('remove o arquivo')
+        rc, res = Api.remove_stored_file(jwt, path)
+        self.logger.info('Result: ' + str(res) + ', ' + str(rc))
+        self.assertTrue(int(rc) == 200, "codigo inesperado")
+
+
+        self.logger.info("Validação da execução dos fluxos...")
+
+        self.logger.debug('Obtenção de novo token...')
+        jwt = Api.login_new_tenant()
+
+        time.sleep(10)
+
+
+
+        dev_id = Api.get_deviceid_by_label(jwt, "linha_1")
+
+
+        self.logger.info("recuperando dados do dispositivo: " + dev_id + ", linha_1, atributo letreiro")
+        rc, count = get_retriever_count_attr(self, jwt, dev_id, "letreiro")
+        self.logger.info("total de registros: " + str(count))
+        self.assertTrue(count == 2, "** FAILED ASSERTION: received an unexpected count **")
+
+        time.sleep(3)
+
+        self.logger.info("recuperando dados do dispositivo: " + dev_id + ", linha_1, atributo mensagem")
+        rc, count = get_retriever_count_attr(self, jwt, dev_id, "mensagem")
+        self.logger.info("total de registros: " + str(count))
+        self.assertTrue(count == 2, "** FAILED ASSERTION: received an unexpected count **")
+
+        time.sleep(3)
+
+        dev_id = Api.get_deviceid_by_label(jwt, "controle")
+        """
+        self.logger.info("recuperando dados do dispositivo: " + dev_id + ", controle, atributo mensagem")
+        rc, count = get_retriever_count_attr(self, jwt, dev_id, "mensagem")
+        self.logger.info("total de registros: " + str(count))
+        self.assertTrue(count == 6, "** FAILED ASSERTION: received an unexpected count **")
+        """
+
+        time.sleep(3)
+
+        self.logger.info("recuperando dados do dispositivo: " + dev_id + ", controle, atributo medida")
+        rc, count = get_retriever_count_attr(self, jwt, dev_id, "medida")
+        self.logger.info("total de registros: " + str(count))
+        self.assertTrue(count == 3, "** FAILED ASSERTION: received an unexpected count **")
+
+        time.sleep(3)
+
+        dev_id = Api.get_deviceid_by_label(jwt, "device")
+        self.logger.info("recuperando dados do dispositivo: " + dev_id + ", device, atributo str")
+        rc, count = get_retriever_count_attr(self, jwt, dev_id, "str")
+        self.logger.info("total de registros: " + str(count))
+        self.assertTrue(count == 2, "** FAILED ASSERTION: received an unexpected count **")
+
+        time.sleep(3)
+
+        dev_id = Api.get_deviceid_by_label(jwt, "instrumento de medicao")
+        self.logger.info("recuperando dados do dispositivo: " + dev_id + ", instrumento de medicao, atributo temperatura")
+        rc, count = get_retriever_count_attr(self, jwt, dev_id, "temperatura")
+        self.logger.info("total de registros: " + str(count))
+        self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
+
+        time.sleep(3)
+
+        self.logger.info("recuperando dados do dispositivo: " + dev_id + ", instrumento de medicao, atributo pressao")
+        rc, count = get_retriever_count_attr(self, jwt, dev_id, "pressao")
+        self.logger.info("total de registros: " + str(count))
+        self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
+
+        time.sleep(3)
+
+        self.logger.info("recuperando dados do dispositivo: " + dev_id + ", instrumento de medicao, atributo umidade")
+        rc, count = get_retriever_count_attr(self, jwt, dev_id, "umidade")
+        self.logger.info("total de registros: " + str(count))
+        self.assertTrue(count == 2, "** FAILED ASSERTION: received an unexpected count **")
+
+        time.sleep(3)
+
+        self.logger.info("recuperando dados do dispositivo: " + dev_id + ", instrumento de medicao, atributo velocidade")
+        rc, count = get_retriever_count_attr(self, jwt, dev_id, "velocidade")
+        self.logger.info("total de registros: " + str(count))
+        self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
+
+        time.sleep(3)
+
+        dev_id = Api.get_deviceid_by_label(jwt, "logger")
+        self.logger.info("recuperando dados do dispositivo: " + dev_id + ", logger, atributo data")
+        dev_id = Api.get_deviceid_by_label(jwt, "logger")
+        rc, count = get_retriever_count_elements(self, jwt, dev_id)
+        self.logger.info("total de registros: " + str(count))
+        self.assertTrue(count == 8, "** FAILED ASSERTION: received an unexpected count **")
+
+        time.sleep(3)
+
+        """
+        # Checando resultado do fluxo FTP (desativado para teste da integração contínua)
+        
+        dev_id = Api.get_deviceid_by_label(jwt, "Camera1")        
+        rc, count = get_history_count_attr(self, jwt, dev_id, "band")
+        self.assertTrue(count == 1, "** FAILED ASSERTION: received an unexpected count **")
+        self.logger.info("total de registros: " + str(count))
+        
+        """
+
+        #Removendo os agendamentos
+        self.logger.info('Removendo os agendamentos')
+        rc, res = Api.remove_cron_jobs(jwt)
+        self.logger.debug("Result: " + str(res) + ", " + str(rc))
+        self.assertTrue(rc == 204, "** FAILED ASSERTION: Unexpected count value")
+
+        #Removendo devices
+        self.logger.info('Removendo todos os devices')
+        rc, res = Api.delete_devices(jwt)
+        self.logger.debug("Result: " + str(res) + ", " + str(rc))
+        self.assertTrue(rc == 200, "** FAILED ASSERTION: Unexpected count value")
+
+        #Removendo templates
+        self.logger.info('Removendo todos os templates')
+        rc, res = Api.delete_templates(jwt)
+        self.logger.debug("Result: " + str(res) + ", " + str(rc))
+        self.assertTrue(rc == 200, "** FAILED ASSERTION: Unexpected count value")
+
+        #Removendo flows
+        self.logger.info('Removendo todos os fluxos')
+        rc, res = Api.delete_flows(jwt)
+        self.logger.debug("Result: " + str(res) + ", " + str(rc))
+        self.assertTrue(rc == 200, "** FAILED ASSERTION: Unexpected count value")
